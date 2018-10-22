@@ -1,7 +1,7 @@
 package fabric.common.exceptions;
 
 public class FabricRuntimeException extends RuntimeException {
-  BackoffCase b;
+  public BackoffCase b;
   
   public FabricRuntimeException() {
     super();

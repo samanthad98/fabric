@@ -450,7 +450,7 @@ public final class Log {
             this);
 
         throw new TransactionRestartingException(this.retrySignal,
-            this.retryCause);
+            this.retryCause, this.retryCause.b);
       }
     }
   }
@@ -469,6 +469,46 @@ public final class Log {
           log.retrySignal = tid;
           try {
             throw new RetrySignalException(reason);
+          } catch (RetrySignalException e) {
+            log.retryCause = e;
+          }
+
+          // Grab the currently marked blocking dependency
+          final Object curWaitingOn = log.waitsOn;
+          if (curWaitingOn != null) {
+            // Run this in a different thread, we need to avoid any deadlocks in
+            // this step.
+            final Log logCopy = log;
+            Threading.getPool().submit(new Runnable() {
+              @Override
+              public void run() {
+                synchronized (curWaitingOn) {
+                  // If still blocked on the object after synchronizing, wake
+                  // the thread that needs to be aborted so it sees retry
+                  // signal.
+                  if (logCopy.waitsOn == curWaitingOn) {
+                    logCopy.waitsOn.notifyAll();
+                  }
+                }
+              }
+            });
+          }
+        }
+      }
+    }
+  }
+  
+  public void flagRetry(String reason, BackoffCase b) {
+    Queue<Log> toFlag = new LinkedList<>();
+    toFlag.add(this);
+    while (!toFlag.isEmpty()) {
+      Log log = toFlag.remove();
+      synchronized (log) {
+        if (log.child != null) toFlag.add(log.child);
+        if (log.retrySignal == null || log.retrySignal.isDescendantOf(tid)) {
+          log.retrySignal = tid;
+          try {
+            throw new RetrySignalException(reason, b);
           } catch (RetrySignalException e) {
             log.retryCause = e;
           }
