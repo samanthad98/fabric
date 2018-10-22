@@ -1,44 +1,42 @@
 package fabric.common.exceptions;
 
+import fabric.common.util.BackoffWrapper;
+
 public class FabricRuntimeException extends RuntimeException {
-  public BackoffCase b;
+  public BackoffCase backoffc;
   
   public FabricRuntimeException() {
     super();
-    b = BO;
+    backoffc = BackoffCase.BO;
   }
 
   public FabricRuntimeException(String message) {
     super(message);
-    b = BO;
+    backoffc = BackoffCase.BO;
   }
   
   public FabricRuntimeException(String message, BackoffCase b) {
     super(message);
-    self.b = b;
+    backoffc = b;
   }
 
   public FabricRuntimeException(Throwable cause) {
     super(cause);
-    b = BO;
+    backoffc = BackoffCase.BO;
   }
   
   public FabricRuntimeException(Throwable cause, BackoffCase b) {
     super(cause);
-    self.b = b;
+    backoffc = b;
   }
 
   public FabricRuntimeException(String message, Throwable cause) {
     super(message, cause);
-    b = BO;
+    backoffc = BackoffCase.BO;
   }
   
   public FabricRuntimeException(String message, Throwable cause, BackoffCase b) {
     super(message, cause);
-    self.b = b;
-  }
-  
-  enum BackoffCase {
-    Palse, BOnon, BO;
+    backoffc = b;
   }
 }

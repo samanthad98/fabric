@@ -18,6 +18,7 @@ import fabric.common.SysUtil;
 import fabric.common.Threading;
 import fabric.common.Timing;
 import fabric.common.TransactionID;
+import fabric.common.util.BackoffWrapper;
 import fabric.common.util.LongKeyHashMap;
 import fabric.common.util.LongKeyMap;
 import fabric.common.util.OidKeyHashMap;
@@ -450,7 +451,7 @@ public final class Log {
             this);
 
         throw new TransactionRestartingException(this.retrySignal,
-            this.retryCause, this.retryCause.b);
+            this.retryCause, this.retryCause.backoffc);
       }
     }
   }

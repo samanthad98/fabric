@@ -28,6 +28,7 @@ import fabric.common.Threading.NamedRunnable;
 import fabric.common.Timing;
 import fabric.common.TransactionID;
 import fabric.common.exceptions.InternalError;
+import fabric.common.util.BackoffWrapper;
 import fabric.common.util.ConcurrentLongKeyHashMap;
 import fabric.common.util.ConcurrentLongKeyMap;
 import fabric.common.util.LongKeyMap;
@@ -253,7 +254,7 @@ public final class TransactionManager {
     HOTOS_LOGGER.log(Level.FINEST, "aborting {0}", current);
 
     // Set the retry flag in all our children, if that hasn't happened already.
-    current.flagRetry("manager triggered abort");
+    current.flagRetry("manager triggered abort", BackoffCase.Pause);
 
     // Wait for all other threads to finish.
     current.waitForThreads();
@@ -784,7 +785,7 @@ public final class TransactionManager {
                   // finish their 2PC
                   //waitsFor.add(lock);
                   lock.flagRetry("writer " + current.tid + " wants to write "
-                      + obj.$getStore() + "/" + obj.$getOnum());
+                      + obj.$getStore() + "/" + obj.$getOnum(), BackoffCase.BOnon);
                 }
               }
 
