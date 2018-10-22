@@ -21,6 +21,11 @@ public final class TransactionRestartingException
     super("restarting " + tid);
     this.tid = tid;
   }
+  
+  public TransactionRestartingException(TransactionID tid, BackoffCase b) {
+    super("restarting " + tid, b);
+    this.tid = tid;
+  }
 
   /**
    * @param tid
@@ -30,6 +35,11 @@ public final class TransactionRestartingException
    */
   public TransactionRestartingException(TransactionID tid, Throwable cause) {
     super("restarting " + tid, cause);
+    this.tid = tid;
+  }
+  
+  public TransactionRestartingException(TransactionID tid, Throwable cause, BackoffCase b) {
+    super("restarting " + tid, cause, b);
     this.tid = tid;
   }
 }
