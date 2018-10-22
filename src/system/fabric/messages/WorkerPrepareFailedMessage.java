@@ -9,6 +9,7 @@ import java.util.List;
 import fabric.common.SerializedObject;
 import fabric.common.exceptions.ProtocolError;
 import fabric.common.net.RemoteIdentity;
+import fabric.common.util.BackoffWrapper;
 import fabric.common.util.LongKeyMap;
 import fabric.common.util.OidKeyHashMap;
 import fabric.worker.Store;
@@ -30,6 +31,8 @@ public class WorkerPrepareFailedMessage extends AsyncMessage {
   public final OidKeyHashMap<SerializedObject> conflicts;
 
   public final List<String> messages;
+  
+  public BackoffCase backoffc;
 
   /**
    * Used to prepare transactions at remote workers.
@@ -40,6 +43,7 @@ public class WorkerPrepareFailedMessage extends AsyncMessage {
     this.tid = tid;
     this.conflicts = e.versionConflicts;
     this.messages = e.messages;
+    this.backoffc = e.backoffc;
   }
 
   // ////////////////////////////////////////////////////////////////////////////
