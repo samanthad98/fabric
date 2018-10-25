@@ -17,6 +17,7 @@ import fabric.common.SerializedObject;
 import fabric.common.SysUtil;
 import fabric.common.exceptions.AccessException;
 import fabric.common.net.RemoteIdentity;
+import fabric.common.util.BackoffWrapper;
 import fabric.common.util.ConcurrentLongKeyHashMap;
 import fabric.common.util.ConcurrentLongKeyMap;
 import fabric.common.util.LongHashSet;
@@ -309,14 +310,14 @@ public abstract class ObjectDB {
         db.rwLocks.acquireWriteLock(obj.getOnum(), this);
       } catch (UnableToLockException e) {
         throw new TransactionPrepareFailedException("Object " + obj.getOnum()
-            + " has been locked by an uncommitted transaction.");
+            + " has been locked by an uncommitted transaction.", BackoffCase.BO);
       }
 
       try {
         synchronized (this) {
           if (state == State.ABORTING) {
             throw new TransactionPrepareFailedException(
-                "Trying to add a create for an aborting transaction.");
+                "Trying to add a create for an aborting transaction.", BackoffCase.Pause);
           }
           // Don't freak out on prepared, this is called to deserialize in BdbDB
           creates.add(obj);
@@ -338,14 +339,14 @@ public abstract class ObjectDB {
         db.rwLocks.acquireWriteLock(obj.getOnum(), this);
       } catch (UnableToLockException e) {
         throw new TransactionPrepareFailedException("Object " + obj.getOnum()
-            + " has been locked by an uncommitted transaction.");
+            + " has been locked by an uncommitted transaction.", BackoffCase.BO);
       }
 
       try {
         synchronized (this) {
           if (state == State.ABORTING) {
             throw new TransactionPrepareFailedException(
-                "Trying to add a write for an aborting transaction.");
+                "Trying to add a write for an aborting transaction.", BackoffCase.Pause);
           }
           // Don't freak out on prepared, this is called to deserialize in BdbDB
           writes.add(obj);
@@ -367,14 +368,14 @@ public abstract class ObjectDB {
         db.rwLocks.acquireReadLock(onum, this);
       } catch (UnableToLockException e) {
         throw new TransactionPrepareFailedException("Object " + onum
-            + " has been write-locked by an uncommitted transaction.");
+            + " has been write-locked by an uncommitted transaction.", BackoffCase.BO);
       }
 
       try {
         synchronized (this) {
           if (state == State.ABORTING) {
             throw new TransactionPrepareFailedException(
-                "Trying to add a read for an aborting transaction.");
+                "Trying to add a read for an aborting transaction.", BackoffCase.Pause);
           }
           // Don't freak out on prepared, this is called to deserialize in BdbDB
           reads.add(onum);
@@ -514,7 +515,7 @@ public abstract class ObjectDB {
       curVersion = getVersion(onum);
     } catch (AccessException e) {
       throw new TransactionPrepareFailedException(versionConflicts,
-          e.getMessage());
+          e.getMessage(), BackoffCase.Pause);
     }
 
     if (curVersion != version) {
@@ -566,7 +567,7 @@ public abstract class ObjectDB {
       // Make sure the onum doesn't already exist in the database.
       if (exists(onum)) {
         throw new TransactionPrepareFailedException(versionConflicts,
-            "Object " + onum + " already exists.");
+            "Object " + onum + " already exists.", BackoffCase.Pause);
       }
 
       // Set the object's initial version number.
