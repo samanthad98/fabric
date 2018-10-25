@@ -42,6 +42,7 @@ import fabric.common.net.handshake.Protocol;
 import fabric.common.net.naming.NameService;
 import fabric.common.net.naming.NameService.PortType;
 import fabric.common.net.naming.TransitionalNameService;
+import fabric.common.util.BackoffWrapper;
 import fabric.common.util.LongHashSet;
 import fabric.common.util.LongIterator;
 import fabric.common.util.LongSet;
@@ -756,24 +757,42 @@ public final class Worker {
     boolean retry = true;
 
     // Flag for triggering backoff on alternate retries.
-    boolean doBackoff = true;
+    BackoffCase doBackoff = BackoffCase.BO;
 
     int backoff = 1;
     while (!success) {
       if (backoffEnabled) {
-        if (doBackoff) {
-          if (backoff > 32) {
-            while (true) {
-              try {
-                Thread.sleep(Math.round(Math.random() * backoff));
-                break;
-              } catch (InterruptedException e) {
-                Logging.logIgnoredInterruptedException(e);
+        switch (doBackoff) {
+          case Pause:
+            break;
+            
+          case BOnon:
+            if (backoff > 32) {
+              while (true) {
+                try {
+                  Thread.sleep(Math.round(Math.random() * backoff));
+                  break;
+                } catch (InterruptedException e) {
+                  Logging.logIgnoredInterruptedException(e);
+                }
               }
             }
-          }
+            break;
+            
+          case BO:
+            if (backoff > 32) {
+              while (true) {
+                try {
+                  Thread.sleep(Math.round(Math.random() * backoff));
+                  break;
+                } catch (InterruptedException e) {
+                  Logging.logIgnoredInterruptedException(e);
+                }
+              }
+            }
 
-          if (backoff < 5000) backoff *= 2;
+            if (backoff < 5000) backoff *= 2;
+            break;
         }
 
         doBackoff = backoff <= 32 || !doBackoff;
@@ -800,6 +819,7 @@ public final class Worker {
         continue;
       } catch (TransactionRestartingException e) {
         success = false;
+        doBackoff = e.backoffc;
 
         TransactionID currentTid = tm.getCurrentTid();
         if (e.tid.isDescendantOf(currentTid))
@@ -832,6 +852,7 @@ public final class Worker {
             success = false;
           } catch (TransactionRestartingException e) {
             success = false;
+            doBackoff = e.backoffc;
 
             if (!autoRetry) {
               throw new AbortException(

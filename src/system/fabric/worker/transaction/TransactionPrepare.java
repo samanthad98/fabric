@@ -12,6 +12,7 @@ import java.util.logging.Level;
 import fabric.common.Logging;
 import fabric.common.SerializedObject;
 import fabric.common.SysUtil;
+import fabric.common.util.BackoffWrapper;
 import fabric.common.util.LongKeyMap;
 import fabric.common.util.OidKeyHashMap;
 import fabric.lang.Object._Impl;
