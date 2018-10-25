@@ -123,7 +123,7 @@ public class TransactionPrepare {
         "{0} failed to prepare at {1}: {2}", new Object[] { txnLog, s, m });
     outstandingStores.remove(s);
     respondedStores.add(s);
-    abort(s);
+    abort(s, m.backoffc);
     if (s instanceof RemoteStore) {
       // Remove old objects from our cache.
       RemoteStore store = (RemoteStore) s;
@@ -195,7 +195,7 @@ public class TransactionPrepare {
         "{0} failed to prepare at {1}: {2}", new Object[] { txnLog, w, m });
     outstandingWorkers.remove(w);
     respondedWorkers.add(w);
-    abort(w);
+    abort(w, m.backoffc);
     // TODO: handle conflicts?
     cleanUp();
   }
@@ -316,12 +316,12 @@ public class TransactionPrepare {
    * Initiate an abort due to the RemoteWorker cause indicating a problem.
    * @param cause the failed worker that initiated the abort.
    */
-  private synchronized void abort(RemoteWorker cause) {
+  private synchronized void abort(RemoteWorker cause, BackoffCase backoffc) {
     if (currentStatus != Status.ABORTING && currentStatus != Status.COMMITTING
         && currentStatus != Status.COMMITTED) {
       WORKER_TRANSACTION_LOGGER.log(Level.FINE,
           "{0} aborted during prepare by {1}", new Object[] { txnLog, cause });
-      runAbort();
+      runAbort(backoffc);
     }
   }
 
@@ -329,19 +329,19 @@ public class TransactionPrepare {
    * Initiate an abort due to the store cause indicating a problem.
    * @param cause the failed store that initiated the abort.
    */
-  private synchronized void abort(Store cause) {
+  private synchronized void abort(Store cause, BackoffCase backoffc) {
     if (currentStatus != Status.ABORTING && currentStatus != Status.COMMITTING
         && currentStatus != Status.COMMITTED) {
       WORKER_TRANSACTION_LOGGER.log(Level.FINE,
           "{0} aborted during prepare by {1}", new Object[] { txnLog, cause });
-      runAbort();
+      runAbort(backoffc);
     }
   }
 
   /**
    * Actually perform abort round, updating state and sending messages.
    */
-  private synchronized void runAbort() {
+  private synchronized void runAbort(BackoffCase backoffc) {
     currentStatus = Status.ABORTING;
 
     // Clear out nodes that we didn't contact and shouldn't contact.
@@ -371,7 +371,7 @@ public class TransactionPrepare {
     }
 
     // Flag that local locks should be released.
-    txnLog.flagRetry("failure during prepare phase");
+    txnLog.flagRetry("failure during prepare phase", backoffc);
     txnLog.prepare = null;
   }
 
