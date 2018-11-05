@@ -80,6 +80,8 @@ public class WorkerPrepareFailedMessage extends AsyncMessage {
     for (String msg : messages) {
       out.writeUTF(msg);
     }
+    
+    out.writeUTF(backoffc.name());
   }
 
   /* readMessage */
@@ -103,6 +105,8 @@ public class WorkerPrepareFailedMessage extends AsyncMessage {
     for (int i = 0; i < size; i++) {
       messages.add(in.readUTF());
     }
+    
+    backoffc = BackoffCase.valueOf(in.readUTF());
   }
 
   @Override

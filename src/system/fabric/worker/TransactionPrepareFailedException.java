@@ -58,6 +58,7 @@ public class TransactionPrepareFailedException extends FabricException {
   public TransactionPrepareFailedException(
       Map<RemoteNode<?>, TransactionPrepareFailedException> failures) {
     this.versionConflicts = new OidKeyHashMap<>();
+    this.backoffc = BackoffCase.Pause;
 
     messages = new ArrayList<>();
     for (Map.Entry<RemoteNode<?>, TransactionPrepareFailedException> entry : failures
@@ -67,6 +68,10 @@ public class TransactionPrepareFailedException extends FabricException {
       if (exn.messages != null) {
         for (String s : exn.messages)
           messages.add(entry.getKey() + ": " + s);
+      }
+      
+      if (this.backoffc.weakerThan(exn.backoffc)) {
+        this.backoffc = exn.backoffc;
       }
     }
   }
@@ -81,6 +86,10 @@ public class TransactionPrepareFailedException extends FabricException {
         versionConflicts.putAll(exc.versionConflicts);
 
       if (exc.messages != null) messages.addAll(exc.messages);
+      
+      if (this.backoffc.weakerThan(exc.backoffc)) {
+        this.backoffc = exc.backoffc;
+      }
     }
   }
 

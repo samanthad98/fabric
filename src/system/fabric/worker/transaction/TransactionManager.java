@@ -201,7 +201,7 @@ public final class TransactionManager {
    * Aborts the transaction, recursing to any workers that were called, and any
    * stores that were contacted.
    */
-  public void abortTransaction() {
+  public void abortTransaction(BackoffCase b) {
     if (current.tid.depth == 0) {
       // Aborting a top-level transaction. Make sure no other thread is working
       // on this transaction.
@@ -254,7 +254,7 @@ public final class TransactionManager {
     HOTOS_LOGGER.log(Level.FINEST, "aborting {0}", current);
 
     // Set the retry flag in all our children, if that hasn't happened already.
-    current.flagRetry("manager triggered abort", BackoffCase.Pause);
+    current.flagRetry("manager triggered abort", b);
 
     // Wait for all other threads to finish.
     current.waitForThreads();
@@ -287,6 +287,10 @@ public final class TransactionManager {
         current.tid = current.tid.parent;
       }
     }
+  }
+  
+  public void abortTransaction() {
+    abortTransaction(BackoffCase.Pause);
   }
 
   /**
@@ -331,7 +335,7 @@ public final class TransactionManager {
         abortTransaction();
         throw new AbortException();
       } catch (TransactionRestartingException e) {
-        abortTransaction();
+        abortTransaction(e.backoffc);
         throw e;
       }
     } else {
@@ -382,7 +386,7 @@ public final class TransactionManager {
         abortTransaction();
         throw e;
       } catch (TransactionRestartingException e) {
-        abortTransaction();
+        abortTransaction(e.backoffc);
         throw e;
       } finally {
         Timing.SUBTX.end();
@@ -535,7 +539,7 @@ public final class TransactionManager {
         current.commitState.notifyAll();
       }
 
-      abortTransaction();
+      abortTransaction(e.backoffc);
 
       throw e;
     }

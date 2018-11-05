@@ -794,8 +794,6 @@ public final class Worker {
             if (backoff < 5000) backoff *= 2;
             break;
         }
-
-        doBackoff = backoff <= 32 || !doBackoff;
       }
 
       success = true;
@@ -877,7 +875,7 @@ public final class Worker {
             // The transaction just we tried to commit will be restarted.
           }
         } else {
-          tm.abortTransaction();
+          tm.abortTransaction(doBackoff);
         }
 
         // If not successful and should retry, override control flow to run the
