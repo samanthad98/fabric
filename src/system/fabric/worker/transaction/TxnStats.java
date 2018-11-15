@@ -15,6 +15,7 @@ public class TxnStats {
   private boolean coordinated = false;
   private int fetches = 0;
   private int fetchWaits = 0;
+  private long backofftime = 0;
   private List<String> msgs = new ArrayList<>();
   private List<String> fetched = new ArrayList<>();
   private List<String> versionConflicts = new ArrayList<>();
@@ -28,6 +29,7 @@ public class TxnStats {
     coordinated = false;
     fetches = 0;
     fetchWaits = 0;
+    backofftime = 0;
     msgs.clear();
     fetched.clear();
     versionConflicts.clear();
@@ -132,13 +134,21 @@ public class TxnStats {
     if (Worker.getWorker().config.recordConflicts)
       versionConflicts.add(conflicts);
   }
+  
+  /**
+   * Add backofftime.
+   */
+  public void addBackoffTime(long t) {
+    backofftime = backofftime + t;
+  }
 
   @Override
   public String toString() {
     return "[COORDINATED: " + coordinated + " WITH " + txnAttempts
         + " TXN ATTEMPTS" + " USING " + fetches + " FETCHES " + fetchWaits
         + " WAITS FOR FETCHES" + " MSGS: " + msgs + " FETCHED: " + fetched
-        + " CONFLICTS: " + versionConflicts + " IN " + Long.toHexString(tid)
+        + " CONFLICTS: " + versionConflicts + " BACKOFFTIME: " + backofftime
+        + " IN " + Long.toHexString(tid)
         + "]";
   }
 }

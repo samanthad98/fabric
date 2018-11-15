@@ -748,7 +748,7 @@ public final class Worker {
    */
   private static <T> T runInSubTransaction(Code<T> code, boolean autoRetry) {
     TransactionManager tm = TransactionManager.getInstance();
-    boolean backoffEnabled = getWorker().config.txRetryBackoff;
+    boolean backoffEnabled = true;
 
     // Indicating the transaction finished
     boolean success = false;
@@ -765,7 +765,11 @@ public final class Worker {
           if (backoff > 32) {
             while (true) {
               try {
-                Thread.sleep(Math.round(Math.random() * backoff));
+                long t = Math.round(Math.random() * backoff);
+                Thread.sleep(t);
+                tm.stats.addBackoffTime(t);
+                Logging.log(TIMING_LOGGER, Level.INFO,
+                    "slept for " + t + " " + tm.stats.toString());
                 break;
               } catch (InterruptedException e) {
                 Logging.logIgnoredInterruptedException(e);
@@ -862,6 +866,12 @@ public final class Worker {
         // If not successful and should retry, override control flow to run the
         // loop again.
         if (!success && retry) continue;
+
+        // If successful, log the statistics of the current transaction
+        if (success) {
+          Logging.log(TIMING_LOGGER, Level.INFO, tm.stats.toString());
+          tm.stats.reset();
+        }
       }
     }
 
