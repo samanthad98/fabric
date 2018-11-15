@@ -1,10 +1,10 @@
 package fabric.common.exceptions;
 
-import fabric.common.util.BackoffWrapper;
+import fabric.common.util.BackoffWrapper.BackoffCase;
 
 public class FabricRuntimeException extends RuntimeException {
   public BackoffCase backoffc;
-  
+
   public FabricRuntimeException() {
     super();
     backoffc = BackoffCase.BO;
@@ -14,7 +14,7 @@ public class FabricRuntimeException extends RuntimeException {
     super(message);
     backoffc = BackoffCase.BO;
   }
-  
+
   public FabricRuntimeException(String message, BackoffCase b) {
     super(message);
     backoffc = b;
@@ -24,7 +24,7 @@ public class FabricRuntimeException extends RuntimeException {
     super(cause);
     backoffc = BackoffCase.BO;
   }
-  
+
   public FabricRuntimeException(Throwable cause, BackoffCase b) {
     super(cause);
     backoffc = b;
@@ -34,8 +34,9 @@ public class FabricRuntimeException extends RuntimeException {
     super(message, cause);
     backoffc = BackoffCase.BO;
   }
-  
-  public FabricRuntimeException(String message, Throwable cause, BackoffCase b) {
+
+  public FabricRuntimeException(String message, Throwable cause,
+      BackoffCase b) {
     super(message, cause);
     backoffc = b;
   }

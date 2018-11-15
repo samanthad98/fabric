@@ -8,7 +8,7 @@ import java.util.Set;
 import java.util.logging.Level;
 
 import fabric.common.Logging;
-import fabric.common.util.BackoffWrapper;
+import fabric.common.util.BackoffWrapper.BackoffCase;
 import fabric.common.util.ConcurrentOidKeyHashMap;
 import fabric.lang.Object._Impl;
 import fabric.worker.FabricSoftRef;

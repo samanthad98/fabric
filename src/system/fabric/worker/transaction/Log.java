@@ -18,7 +18,7 @@ import fabric.common.SysUtil;
 import fabric.common.Threading;
 import fabric.common.Timing;
 import fabric.common.TransactionID;
-import fabric.common.util.BackoffWrapper;
+import fabric.common.util.BackoffWrapper.BackoffCase;
 import fabric.common.util.LongKeyHashMap;
 import fabric.common.util.LongKeyMap;
 import fabric.common.util.OidKeyHashMap;
@@ -498,7 +498,7 @@ public final class Log {
       }
     }
   }
-  
+
   public void flagRetry(String reason, BackoffCase b) {
     Queue<Log> toFlag = new LinkedList<>();
     toFlag.add(this);

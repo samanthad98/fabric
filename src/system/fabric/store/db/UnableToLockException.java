@@ -1,16 +1,17 @@
 package fabric.store.db;
-import fabric.util.BackoffWrapper;
+
+import fabric.common.util.BackoffWrapper.BackoffCase;
 
 /**
  * An exception indicating that an attempt to lock an object has failed.
  */
 class UnableToLockException extends Exception {
   public BackoffCase backoffc;
-  
+
   public UnableToLockException() {
-    UnableToLockException(BackoffCase.BO);
+    backoffc = BackoffCase.BO;
   }
-  
+
   public UnableToLockException(BackoffCase b) {
     backoffc = b;
   }

@@ -15,7 +15,7 @@ import com.google.common.collect.TreeMultiset;
 
 import fabric.common.Logging;
 import fabric.common.TransactionID;
-import fabric.common.util.BackoffWrapper;
+import fabric.common.util.BackoffWrapper.BackoffCase;
 import fabric.common.util.LongHashSet;
 import fabric.common.util.LongIterator;
 import fabric.common.util.LongKeyHashMap;

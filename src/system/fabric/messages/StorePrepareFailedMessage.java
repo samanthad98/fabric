@@ -9,7 +9,7 @@ import java.util.List;
 import fabric.common.SerializedObject;
 import fabric.common.exceptions.ProtocolError;
 import fabric.common.net.RemoteIdentity;
-import fabric.common.util.BackoffWrapper;
+import fabric.common.util.BackoffWrapper.BackoffCase;
 import fabric.common.util.LongKeyMap;
 import fabric.common.util.OidKeyHashMap;
 import fabric.worker.Store;
@@ -31,7 +31,7 @@ public class StorePrepareFailedMessage extends AsyncMessage {
   public final OidKeyHashMap<SerializedObject> conflicts;
 
   public final List<String> messages;
-  
+
   public BackoffCase backoffc;
 
   /**

@@ -2,6 +2,7 @@ package fabric.worker;
 
 import fabric.common.TransactionID;
 import fabric.common.exceptions.FabricRuntimeException;
+import fabric.common.util.BackoffWrapper.BackoffCase;
 
 /**
  * Indicates that the current transaction should be restarted.
@@ -12,6 +13,7 @@ public final class TransactionRestartingException
    * Identifies the transaction that is to be restarted.
    */
   public final TransactionID tid;
+  public BackoffCase backoffc;
 
   /**
    * @param tid
@@ -21,7 +23,7 @@ public final class TransactionRestartingException
     super("restarting " + tid);
     this.tid = tid;
   }
-  
+
   public TransactionRestartingException(TransactionID tid, BackoffCase b) {
     super("restarting " + tid, b);
     this.tid = tid;
@@ -37,8 +39,9 @@ public final class TransactionRestartingException
     super("restarting " + tid, cause);
     this.tid = tid;
   }
-  
-  public TransactionRestartingException(TransactionID tid, Throwable cause, BackoffCase b) {
+
+  public TransactionRestartingException(TransactionID tid, Throwable cause,
+      BackoffCase b) {
     super("restarting " + tid, cause, b);
     this.tid = tid;
   }

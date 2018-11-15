@@ -6,7 +6,7 @@ import java.util.Map;
 
 import fabric.common.SerializedObject;
 import fabric.common.exceptions.FabricException;
-import fabric.common.util.BackoffWrapper;
+import fabric.common.util.BackoffWrapper.BackoffCase;
 import fabric.common.util.OidKeyHashMap;
 import fabric.net.RemoteNode;
 
@@ -17,7 +17,7 @@ public class TransactionPrepareFailedException extends FabricException {
   public final OidKeyHashMap<SerializedObject> versionConflicts;
 
   public final List<String> messages;
-  
+
   public BackoffCase backoffc;
 
   public TransactionPrepareFailedException(
@@ -33,7 +33,7 @@ public class TransactionPrepareFailedException extends FabricException {
     this.messages = new ArrayList<>();
     backoffc = BackoffCase.BO;
   }
-  
+
   public TransactionPrepareFailedException(
       OidKeyHashMap<SerializedObject> versionConflicts, BackoffCase b) {
     this.versionConflicts = versionConflicts;
@@ -47,9 +47,10 @@ public class TransactionPrepareFailedException extends FabricException {
     this.messages = messages;
     backoffc = BackoffCase.BO;
   }
-  
+
   public TransactionPrepareFailedException(
-      OidKeyHashMap<SerializedObject> versionConflicts, List<String> messages, BackoffCase b) {
+      OidKeyHashMap<SerializedObject> versionConflicts, List<String> messages,
+      BackoffCase b) {
     this.versionConflicts = versionConflicts;
     this.messages = messages;
     backoffc = b;
@@ -69,7 +70,7 @@ public class TransactionPrepareFailedException extends FabricException {
         for (String s : exn.messages)
           messages.add(entry.getKey() + ": " + s);
       }
-      
+
       if (this.backoffc.weakerThan(exn.backoffc)) {
         this.backoffc = exn.backoffc;
       }
@@ -86,7 +87,7 @@ public class TransactionPrepareFailedException extends FabricException {
         versionConflicts.putAll(exc.versionConflicts);
 
       if (exc.messages != null) messages.addAll(exc.messages);
-      
+
       if (this.backoffc.weakerThan(exc.backoffc)) {
         this.backoffc = exc.backoffc;
       }
@@ -99,9 +100,10 @@ public class TransactionPrepareFailedException extends FabricException {
     messages = java.util.Collections.singletonList(message);
     backoffc = BackoffCase.BO;
   }
-  
+
   public TransactionPrepareFailedException(
-      OidKeyHashMap<SerializedObject> versionConflicts, String message, BackoffCase b) {
+      OidKeyHashMap<SerializedObject> versionConflicts, String message,
+      BackoffCase b) {
     this.versionConflicts = versionConflicts;
     messages = java.util.Collections.singletonList(message);
     backoffc = b;
@@ -110,7 +112,7 @@ public class TransactionPrepareFailedException extends FabricException {
   public TransactionPrepareFailedException(String message) {
     this(new OidKeyHashMap<SerializedObject>(), message);
   }
-  
+
   public TransactionPrepareFailedException(String message, BackoffCase b) {
     this(new OidKeyHashMap<SerializedObject>(), message, b);
   }

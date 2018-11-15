@@ -3,6 +3,7 @@ package fabric.common.net;
 import static fabric.common.Logging.NETWORK_CONNECTION_LOGGER;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
@@ -93,8 +94,8 @@ public final class SubSocketFactory<Node extends RemoteNode<Node>> {
         SocketAddress local =
             nameService.resolve(Worker.getWorkerName(), portType);
 
-        Socket s = new Socket(addr.getAddress(), addr.getPort(),
-            local.getAddress(), 0);
+        Socket s =
+            new Socket(InetAddress.getByName("localhost"), addr.getPort());
         s.setSoLinger(false, 0);
         s.setTcpNoDelay(true);
 

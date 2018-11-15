@@ -17,7 +17,7 @@ import fabric.common.SerializedObject;
 import fabric.common.SysUtil;
 import fabric.common.exceptions.AccessException;
 import fabric.common.net.RemoteIdentity;
-import fabric.common.util.BackoffWrapper;
+import fabric.common.util.BackoffWrapper.BackoffCase;
 import fabric.common.util.ConcurrentLongKeyHashMap;
 import fabric.common.util.ConcurrentLongKeyMap;
 import fabric.common.util.LongHashSet;
@@ -80,24 +80,24 @@ public abstract class ObjectDB {
      * State of a PendingTransaction at the store.
      */
     public static enum State {
-      /**
-       * Began preparing but not finished preparing.
-       * May abort due to a lock conflict or a concurrent abort message from the
-       * worker.
-       */
-      PREPARING,
-      /**
-       * Began preparing but not finished preparing and is now marked to abort.
-       * This state happens when an abort message arrives from the worker and
-       * the prepare message hasn't finished processing.
-       */
-      ABORTING,
-      /**
-       * Finished preparing but not yet committed.
-       * Can still abort, but this indicates the prepare message has finished
-       * being handled.
-       */
-      PREPARED;
+        /**
+         * Began preparing but not finished preparing.
+         * May abort due to a lock conflict or a concurrent abort message from the
+         * worker.
+         */
+        PREPARING,
+        /**
+         * Began preparing but not finished preparing and is now marked to abort.
+         * This state happens when an abort message arrives from the worker and
+         * the prepare message hasn't finished processing.
+         */
+        ABORTING,
+        /**
+         * Finished preparing but not yet committed.
+         * Can still abort, but this indicates the prepare message has finished
+         * being handled.
+         */
+        PREPARED;
     }
 
     public final long tid;
@@ -309,15 +309,18 @@ public abstract class ObjectDB {
       try {
         db.rwLocks.acquireWriteLock(obj.getOnum(), this);
       } catch (UnableToLockException e) {
-        throw new TransactionPrepareFailedException("Object " + obj.getOnum()
-            + " has been locked by an uncommitted transaction.", BackoffCase.BO);
+        throw new TransactionPrepareFailedException(
+            "Object " + obj.getOnum()
+                + " has been locked by an uncommitted transaction.",
+            BackoffCase.BO);
       }
 
       try {
         synchronized (this) {
           if (state == State.ABORTING) {
             throw new TransactionPrepareFailedException(
-                "Trying to add a create for an aborting transaction.", BackoffCase.Pause);
+                "Trying to add a create for an aborting transaction.",
+                BackoffCase.Pause);
           }
           // Don't freak out on prepared, this is called to deserialize in BdbDB
           creates.add(obj);
@@ -338,15 +341,18 @@ public abstract class ObjectDB {
       try {
         db.rwLocks.acquireWriteLock(obj.getOnum(), this);
       } catch (UnableToLockException e) {
-        throw new TransactionPrepareFailedException("Object " + obj.getOnum()
-            + " has been locked by an uncommitted transaction.", BackoffCase.BO);
+        throw new TransactionPrepareFailedException(
+            "Object " + obj.getOnum()
+                + " has been locked by an uncommitted transaction.",
+            BackoffCase.BO);
       }
 
       try {
         synchronized (this) {
           if (state == State.ABORTING) {
             throw new TransactionPrepareFailedException(
-                "Trying to add a write for an aborting transaction.", BackoffCase.Pause);
+                "Trying to add a write for an aborting transaction.",
+                BackoffCase.Pause);
           }
           // Don't freak out on prepared, this is called to deserialize in BdbDB
           writes.add(obj);
@@ -367,15 +373,18 @@ public abstract class ObjectDB {
       try {
         db.rwLocks.acquireReadLock(onum, this);
       } catch (UnableToLockException e) {
-        throw new TransactionPrepareFailedException("Object " + onum
-            + " has been write-locked by an uncommitted transaction.", BackoffCase.BO);
+        throw new TransactionPrepareFailedException(
+            "Object " + onum
+                + " has been write-locked by an uncommitted transaction.",
+            BackoffCase.BO);
       }
 
       try {
         synchronized (this) {
           if (state == State.ABORTING) {
             throw new TransactionPrepareFailedException(
-                "Trying to add a read for an aborting transaction.", BackoffCase.Pause);
+                "Trying to add a read for an aborting transaction.",
+                BackoffCase.Pause);
           }
           // Don't freak out on prepared, this is called to deserialize in BdbDB
           reads.add(onum);

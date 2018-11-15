@@ -12,7 +12,7 @@ import java.util.logging.Level;
 import fabric.common.Logging;
 import fabric.common.SerializedObject;
 import fabric.common.SysUtil;
-import fabric.common.util.BackoffWrapper;
+import fabric.common.util.BackoffWrapper.BackoffCase;
 import fabric.common.util.LongKeyMap;
 import fabric.common.util.OidKeyHashMap;
 import fabric.lang.Object._Impl;
@@ -308,7 +308,7 @@ public class TransactionPrepare {
         && currentStatus != Status.COMMITTED) {
       WORKER_TRANSACTION_LOGGER.log(Level.FINE,
           "{0} aborted during prepare by external actor", txnLog);
-      runAbort();
+      runAbort(BackoffCase.BOnon);
     }
     if (currentStatus == Status.ABORTING) cleanUp();
   }
@@ -364,7 +364,8 @@ public class TransactionPrepare {
             new Object[] { txnLog, w });
         w.abortTransaction(txnLog.tid);
       }
-      for (Store s : SysUtil.chain(outstandingStores.keySet(), respondedStores)) {
+      for (Store s : SysUtil.chain(outstandingStores.keySet(),
+          respondedStores)) {
         WORKER_TRANSACTION_LOGGER.log(Level.FINER, "{0} sending abort to {1}",
             new Object[] { txnLog, s });
         s.abortTransaction(txnLog.tid);

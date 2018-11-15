@@ -42,7 +42,7 @@ import fabric.common.net.handshake.Protocol;
 import fabric.common.net.naming.NameService;
 import fabric.common.net.naming.NameService.PortType;
 import fabric.common.net.naming.TransitionalNameService;
-import fabric.common.util.BackoffWrapper;
+import fabric.common.util.BackoffWrapper.BackoffCase;
 import fabric.common.util.LongHashSet;
 import fabric.common.util.LongIterator;
 import fabric.common.util.LongSet;
@@ -749,7 +749,7 @@ public final class Worker {
    */
   private static <T> T runInSubTransaction(Code<T> code, boolean autoRetry) {
     TransactionManager tm = TransactionManager.getInstance();
-    boolean backoffEnabled = getWorker().config.txRetryBackoff;
+    boolean backoffEnabled = true;
 
     // Indicating the transaction finished
     boolean success = false;
@@ -763,36 +763,40 @@ public final class Worker {
     while (!success) {
       if (backoffEnabled) {
         switch (doBackoff) {
-          case Pause:
-            break;
-            
-          case BOnon:
-            if (backoff > 32) {
-              while (true) {
-                try {
-                  Thread.sleep(Math.round(Math.random() * backoff));
-                  break;
-                } catch (InterruptedException e) {
-                  Logging.logIgnoredInterruptedException(e);
-                }
-              }
-            }
-            break;
-            
-          case BO:
-            if (backoff > 32) {
-              while (true) {
-                try {
-                  Thread.sleep(Math.round(Math.random() * backoff));
-                  break;
-                } catch (InterruptedException e) {
-                  Logging.logIgnoredInterruptedException(e);
-                }
-              }
-            }
+        case Pause:
+          break;
 
-            if (backoff < 5000) backoff *= 2;
-            break;
+        case BOnon:
+          if (backoff > 32) {
+            while (true) {
+              try {
+                long t = Math.round(Math.random() * backoff);
+                Thread.sleep(t);
+                tm.stats.addBackoffTime(t);
+                break;
+              } catch (InterruptedException e) {
+                Logging.logIgnoredInterruptedException(e);
+              }
+            }
+          }
+          break;
+
+        case BO:
+          if (backoff > 32) {
+            while (true) {
+              try {
+                long t = Math.round(Math.random() * backoff);
+                Thread.sleep(t);
+                tm.stats.addBackoffTime(t);
+                break;
+              } catch (InterruptedException e) {
+                Logging.logIgnoredInterruptedException(e);
+              }
+            }
+          }
+
+          if (backoff < 5000) backoff *= 2;
+          break;
         }
       }
 
@@ -876,6 +880,12 @@ public final class Worker {
           }
         } else {
           tm.abortTransaction(doBackoff);
+        }
+
+        // If successful, log the statistics of the current transaction
+        if (success) {
+          Logging.log(TIMING_LOGGER, Level.INFO, tm.stats.toString());
+          tm.stats.reset();
         }
 
         // If not successful and should retry, override control flow to run the

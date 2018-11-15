@@ -9,7 +9,7 @@ import fabric.common.exceptions.ProtocolError;
 import fabric.common.net.RemoteIdentity;
 import fabric.common.net.SubServerSocket;
 import fabric.common.net.SubServerSocketFactory;
-import fabric.common.util.BackoffWrapper;
+import fabric.common.util.BackoffWrapper.BackoffCase;
 import fabric.common.util.OidKeyHashMap;
 import fabric.lang.Object._Impl;
 import fabric.lang.Object._Proxy;
@@ -228,7 +228,8 @@ public class RemoteCallManager extends MessageToWorkerHandler {
     try {
       Log log = TransactionRegistry.getInnermostLog(msg.tid);
       if (log == null)
-        throw new TransactionPrepareFailedException("No such transaction", BackoffCase.Pause);
+        throw new TransactionPrepareFailedException("No such transaction",
+            BackoffCase.Pause);
 
       // Commit up to the top level.
       TransactionManager tm = TransactionManager.getInstance();

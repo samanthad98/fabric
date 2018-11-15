@@ -28,7 +28,7 @@ import fabric.common.Threading.NamedRunnable;
 import fabric.common.Timing;
 import fabric.common.TransactionID;
 import fabric.common.exceptions.InternalError;
-import fabric.common.util.BackoffWrapper;
+import fabric.common.util.BackoffWrapper.BackoffCase;
 import fabric.common.util.ConcurrentLongKeyHashMap;
 import fabric.common.util.ConcurrentLongKeyMap;
 import fabric.common.util.LongKeyMap;
@@ -288,7 +288,7 @@ public final class TransactionManager {
       }
     }
   }
-  
+
   public void abortTransaction() {
     abortTransaction(BackoffCase.Pause);
   }
@@ -788,8 +788,10 @@ public final class TransactionManager {
                   // Don't wait for readers, either they'll abort later on or
                   // finish their 2PC
                   //waitsFor.add(lock);
-                  lock.flagRetry("writer " + current.tid + " wants to write "
-                      + obj.$getStore() + "/" + obj.$getOnum(), BackoffCase.BOnon);
+                  lock.flagRetry(
+                      "writer " + current.tid + " wants to write "
+                          + obj.$getStore() + "/" + obj.$getOnum(),
+                      BackoffCase.BOnon);
                 }
               }
 
