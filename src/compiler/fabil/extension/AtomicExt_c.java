@@ -71,6 +71,7 @@ public class AtomicExt_c extends FabILExt_c {
     String backoff = "$backoff" + (freshTid++);
     String doBackoff = "$doBackoff" + (freshTid++);
     String backoffEnabled = "$backoffEnabled" + (freshTid++);
+    String t = "$t" + (freshTid++);
 
     // @formatter:off
     String block = "{\n" + "  %LS\n"
@@ -84,10 +85,13 @@ public class AtomicExt_c extends FabILExt_c {
         + "  " + label + ": for (boolean " + successFlag + " = false; !" + successFlag + "; ) {\n"
         + "    if (" + backoffEnabled +") {\n"
         + "      if (" + doBackoff + ") {"
+        + "        " + tm + ".stats.addBackoffCount(" + backoff + ");\n"
         + "        if (" + backoff + " > 32) {\n"
         + "          while (true) {\n"
         + "            try {\n"
-        + "              java.lang.Thread.sleep(java.lang.Math.round(java.lang.Math.random() * " + backoff + "));\n"
+        + "              long " + t + " = java.lang.Math.round(java.lang.Math.random() * " + backoff + ");\n"
+        + "              java.lang.Thread.sleep( " + t + " ));\n"
+        + "              " + tm + ".stats.addBackoffTime(" + t + ");\n"
         + "              break;\n"
         + "            } catch (java.lang.InterruptedException " + e + ") {\n"
         + "            }\n"
@@ -182,6 +186,9 @@ public class AtomicExt_c extends FabILExt_c {
         + "          continue " + label + ";\n"
         + "        }\n"
         + "      }\n"
+        + "      if (" + successFlag + ") {\n"
+        + "        fabric.common.Logging.WORKER_TRANSACTION_LOGGER.log(java.util.logging.Level.INFO, " + tm + ".stats.toString());\n"
+        + "        " + tm + ".stats.reset();\n"
         + "    }\n"
         + "  }\n"
         + "}\n";

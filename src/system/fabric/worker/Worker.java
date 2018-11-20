@@ -2,6 +2,7 @@ package fabric.worker;
 
 import static fabric.common.Logging.TIMING_LOGGER;
 import static fabric.common.Logging.WORKER_LOGGER;
+import static fabric.common.Logging.WORKER_TRANSACTION_LOGGER;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -862,15 +863,15 @@ public final class Worker {
           tm.abortTransaction();
         }
 
+        // If successful, log the statistics of the current transaction
+        if (success) {
+          WORKER_TRANSACTION_LOGGER.log(Level.INFO, tm.stats.toString());
+          tm.stats.reset();
+        }
+
         // If not successful and should retry, override control flow to run the
         // loop again.
         if (!success && retry) continue;
-
-        // If successful, log the statistics of the current transaction
-        if (success) {
-          Logging.log(TIMING_LOGGER, Level.INFO, tm.stats.toString());
-          tm.stats.reset();
-        }
       }
     }
 
