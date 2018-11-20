@@ -71,6 +71,7 @@ public class AtomicExt_c extends FabILExt_c {
     String backoff = "$backoff" + (freshTid++);
     String doBackoff = "$doBackoff" + (freshTid++);
     String backoffEnabled = "$backoffEnabled" + (freshTid++);
+    String t = "$t" + (freshTid++);
 
     // @formatter:off
     String block = "{\n" + "  %LS\n"
@@ -87,10 +88,13 @@ public class AtomicExt_c extends FabILExt_c {
         + "        case (fabric.common.util.BackoffWrapper.BackoffCase.Pause):\n"
         + "          break;\n"
         + "        case (fabric.common.util.BackoffWrapper.BackoffCase.BOnon):\n"
+        + "          " + tm + ".stats.addBackoffCount(" + backoff + ");\n"
         + "          if (" + backoff + " > 32) {\n"
         + "            while (true) {\n"
         + "              try {\n"
-        + "                java.lang.Thread.sleep(java.lang.Math.round(java.lang.Math.random() * " + backoff + "));\n"
+        + "                long " + t + " = java.lang.Math.round(java.lang.Math.random() * " + backoff + ");\n"
+        + "                java.lang.Thread.sleep(" + t + ");\n"
+        + "                " + tm + ".stats.addBackoffTime("+ t + ");\n"
         + "                break;\n"
         + "              } catch (java.lang.InterruptedException " + e + ") {\n"
         + "              }\n"
@@ -98,16 +102,19 @@ public class AtomicExt_c extends FabILExt_c {
         + "          }\n"
         + "          break;\n"
         + "        case (fabric.common.util.BackoffWrapper.BackoffCase.BO):\n"
+        + "          " + tm + ".stats.addBackoffCount(" + backoff + ");\n"
         + "          if (" + backoff + " > 32) {\n"
         + "            while (true) {\n"
         + "              try {\n"
-        + "                java.lang.Thread.sleep(java.lang.Math.round(java.lang.Math.random() * " + backoff + "));\n"
-        + "                break;\n"
+        + "                long " + t + " = java.lang.Math.round(java.lang.Math.random() * " + backoff + ");\n"
+        + "                java.lang.Thread.sleep(" + t + ");\n"
+        + "                " + tm + ".stats.addBackoffTime("+ t + ");\n"        + "                break;\n"
         + "              } catch (java.lang.InterruptedException " + e + ") {\n"
         + "              }\n"
         + "            }\n"
         + "          }\n"
         + "          if (" + backoff + " < 5000) " + backoff + " *= 2;\n"
+        + "          break;\n"
         + "      }\n"
         + "    }\n"
         + "    " + successFlag + " = true;\n"
