@@ -749,7 +749,7 @@ public final class Worker {
    */
   private static <T> T runInSubTransaction(Code<T> code, boolean autoRetry) {
     TransactionManager tm = TransactionManager.getInstance();
-    boolean backoffEnabled = true;
+    boolean backoffEnabled = getWorker().config.txRetryBackoff;
 
     // Indicating the transaction finished
     boolean success = false;
@@ -767,6 +767,7 @@ public final class Worker {
           break;
 
         case BOnon:
+          tm.stats.addBackoffCount(backoff);
           if (backoff > 32) {
             while (true) {
               try {
@@ -782,6 +783,7 @@ public final class Worker {
           break;
 
         case BO:
+          tm.stats.addBackoffCount(backoff);
           if (backoff > 32) {
             while (true) {
               try {
