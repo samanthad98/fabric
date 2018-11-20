@@ -2,6 +2,7 @@ package fabric.worker;
 
 import static fabric.common.Logging.TIMING_LOGGER;
 import static fabric.common.Logging.WORKER_LOGGER;
+import static fabric.common.Logging.WORKER_TRANSACTION_LOGGER;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -886,7 +887,7 @@ public final class Worker {
 
         // If successful, log the statistics of the current transaction
         if (success) {
-          Logging.log(TIMING_LOGGER, Level.INFO, tm.stats.toString());
+          WORKER_TRANSACTION_LOGGER.log(Level.INFO, tm.stats.toString());
           tm.stats.reset();
         }
 

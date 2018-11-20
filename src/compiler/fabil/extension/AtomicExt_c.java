@@ -86,7 +86,7 @@ public class AtomicExt_c extends FabILExt_c {
         + "      switch (" + doBackoff + ") {\n"
         + "        case (fabric.common.util.BackoffWrapper.BackoffCase.Pause):\n"
         + "          break;\n"
-        + "        case (fabric.common.util.BackoffWrapper.BackoffCase.Bonon):\n"
+        + "        case (fabric.common.util.BackoffWrapper.BackoffCase.BOnon):\n"
         + "          if (" + backoff + " > 32) {\n"
         + "            while (true) {\n"
         + "              try {\n"
