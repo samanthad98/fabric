@@ -80,6 +80,7 @@ public class TransactionPrepareFailedException extends FabricException {
   public TransactionPrepareFailedException(
       List<TransactionPrepareFailedException> causes) {
     this.versionConflicts = new OidKeyHashMap<>();
+    this.backoffc = BackoffCase.Pause;
 
     messages = new ArrayList<>();
     for (TransactionPrepareFailedException exc : causes) {
