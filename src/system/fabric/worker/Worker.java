@@ -770,6 +770,7 @@ public final class Worker {
                 long t = Math.round(Math.random() * backoff);
                 Thread.sleep(t);
                 tm.stats.addBackoffTime(t);
+                WORKER_TRANSACTION_LOGGER.log(Level.INFO, "slept for " + t);
                 break;
               } catch (InterruptedException e) {
                 Logging.logIgnoredInterruptedException(e);
@@ -865,7 +866,8 @@ public final class Worker {
 
         // If successful, log the statistics of the current transaction
         if (success) {
-          WORKER_TRANSACTION_LOGGER.log(Level.INFO, tm.stats.toString());
+          WORKER_TRANSACTION_LOGGER.log(Level.INFO,
+              "[NOT IN STATS] " + tm.stats.toString());
           tm.stats.reset();
         }
 

@@ -90,8 +90,9 @@ public class AtomicExt_c extends FabILExt_c {
         + "          while (true) {\n"
         + "            try {\n"
         + "              long " + t + " = java.lang.Math.round(java.lang.Math.random() * " + backoff + ");\n"
-        + "              java.lang.Thread.sleep( " + t + " ));\n"
+        + "              java.lang.Thread.sleep( " + t + " );\n"
         + "              " + tm + ".stats.addBackoffTime(" + t + ");\n"
+        + "              fabric.common.Logging.WORKER_TRANSACTION_LOGGER.log(java.util.logging.Level.INFO, \"\" + " + t + ");\n"
         + "              break;\n"
         + "            } catch (java.lang.InterruptedException " + e + ") {\n"
         + "            }\n"
@@ -189,6 +190,7 @@ public class AtomicExt_c extends FabILExt_c {
         + "      if (" + successFlag + ") {\n"
         + "        fabric.common.Logging.WORKER_TRANSACTION_LOGGER.log(java.util.logging.Level.INFO, " + tm + ".stats.toString());\n"
         + "        " + tm + ".stats.reset();\n"
+        + "      }\n"
         + "    }\n"
         + "  }\n"
         + "}\n";
