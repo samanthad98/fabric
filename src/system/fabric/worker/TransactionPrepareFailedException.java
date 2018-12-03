@@ -23,6 +23,8 @@ public class TransactionPrepareFailedException extends FabricException {
   public TransactionPrepareFailedException(
       TransactionRestartingException cause) {
     this.messages = new ArrayList<>();
+    String str = cause.getCause().getMessage();
+    this.messages.add(str);
     this.versionConflicts = new OidKeyHashMap<>();
     backoffc = cause.backoffc;
   }

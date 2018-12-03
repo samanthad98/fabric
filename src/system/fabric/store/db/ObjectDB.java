@@ -310,7 +310,7 @@ public abstract class ObjectDB {
         db.rwLocks.acquireWriteLock(obj.getOnum(), this);
       } catch (UnableToLockException e) {
         throw new TransactionPrepareFailedException(
-            "Object " + obj.getOnum()
+            "54 Object " + obj.getOnum()
                 + " has been locked by an uncommitted transaction.",
             BackoffCase.BO);
       }
@@ -319,7 +319,7 @@ public abstract class ObjectDB {
         synchronized (this) {
           if (state == State.ABORTING) {
             throw new TransactionPrepareFailedException(
-                "Trying to add a create for an aborting transaction.",
+                "55 Trying to add a create for an aborting transaction.",
                 BackoffCase.Pause);
           }
           // Don't freak out on prepared, this is called to deserialize in BdbDB
@@ -342,7 +342,7 @@ public abstract class ObjectDB {
         db.rwLocks.acquireWriteLock(obj.getOnum(), this);
       } catch (UnableToLockException e) {
         throw new TransactionPrepareFailedException(
-            "Object " + obj.getOnum()
+            "54 Object " + obj.getOnum()
                 + " has been locked by an uncommitted transaction.",
             BackoffCase.BO);
       }
@@ -351,7 +351,7 @@ public abstract class ObjectDB {
         synchronized (this) {
           if (state == State.ABORTING) {
             throw new TransactionPrepareFailedException(
-                "Trying to add a write for an aborting transaction.",
+                "55 Trying to add a write for an aborting transaction.",
                 BackoffCase.Pause);
           }
           // Don't freak out on prepared, this is called to deserialize in BdbDB
@@ -374,7 +374,7 @@ public abstract class ObjectDB {
         db.rwLocks.acquireReadLock(onum, this);
       } catch (UnableToLockException e) {
         throw new TransactionPrepareFailedException(
-            "Object " + onum
+            "54 Object " + onum
                 + " has been write-locked by an uncommitted transaction.",
             BackoffCase.BO);
       }
@@ -383,7 +383,7 @@ public abstract class ObjectDB {
         synchronized (this) {
           if (state == State.ABORTING) {
             throw new TransactionPrepareFailedException(
-                "Trying to add a read for an aborting transaction.",
+                "55 Trying to add a read for an aborting transaction.",
                 BackoffCase.Pause);
           }
           // Don't freak out on prepared, this is called to deserialize in BdbDB
@@ -502,7 +502,7 @@ public abstract class ObjectDB {
     OidKeyHashMap<PendingTransaction> submap = pendingByTid.get(tid);
     if (submap == null) {
       throw new TransactionPrepareFailedException(versionConflicts,
-          "Aborted by another thread");
+          "57 Aborted by another thread");
     }
 
     PendingTransaction tx;
@@ -510,7 +510,7 @@ public abstract class ObjectDB {
       if (!submap.containsKey(worker)
           || submap.get(worker).state == PendingTransaction.State.ABORTING)
         throw new TransactionPrepareFailedException(versionConflicts,
-            "Aborted by another thread");
+            "57 Aborted by another thread");
 
       tx = submap.get(worker);
     }
@@ -524,7 +524,7 @@ public abstract class ObjectDB {
       curVersion = getVersion(onum);
     } catch (AccessException e) {
       throw new TransactionPrepareFailedException(versionConflicts,
-          e.getMessage(), BackoffCase.Pause);
+          "52 " + e.getMessage(), BackoffCase.Pause);
     }
 
     if (curVersion != version) {
@@ -554,7 +554,7 @@ public abstract class ObjectDB {
     OidKeyHashMap<PendingTransaction> submap = pendingByTid.get(tid);
     if (submap == null) {
       throw new TransactionPrepareFailedException(versionConflicts,
-          "Aborted by another thread");
+          "57 Aborted by another thread");
     }
 
     long onum = obj.getOnum();
@@ -563,7 +563,7 @@ public abstract class ObjectDB {
       if (!submap.containsKey(worker)
           || submap.get(worker).state == PendingTransaction.State.ABORTING)
         throw new TransactionPrepareFailedException(versionConflicts,
-            "Aborted by another thread");
+            "57 Aborted by another thread");
       tx = submap.get(worker);
     }
 
@@ -576,7 +576,7 @@ public abstract class ObjectDB {
       // Make sure the onum doesn't already exist in the database.
       if (exists(onum)) {
         throw new TransactionPrepareFailedException(versionConflicts,
-            "Object " + onum + " already exists.", BackoffCase.Pause);
+            "56 Object " + onum + " already exists.", BackoffCase.Pause);
       }
 
       // Set the object's initial version number.

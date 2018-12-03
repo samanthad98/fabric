@@ -9,18 +9,18 @@ import fabric.common.util.BackoffWrapper.BackoffCase;
 public class RetrySignalException extends FabricRuntimeException {
 
   public RetrySignalException(String message) {
-    super("Retrying due to " + message);
+    super(message.split(" ")[0] + " Retrying due to " + message);
   }
 
   public RetrySignalException(String message, BackoffCase b) {
-    super("Retrying due to " + message, b);
+    super(message.split(" ")[0] + " Retrying due to " + message, b);
   }
 
   public RetrySignalException(String message, Throwable cause) {
-    super("Retrying due to " + message, cause);
+    super(message.split(" ")[0] + " Retrying due to " + message, cause);
   }
 
   public RetrySignalException(String message, Throwable cause, BackoffCase b) {
-    super("Retrying due to " + message, cause, b);
+    super(message.split(" ")[0] + " Retrying due to " + message, cause, b);
   }
 }

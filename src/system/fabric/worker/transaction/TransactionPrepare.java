@@ -124,7 +124,9 @@ public class TransactionPrepare {
         "{0} failed to prepare at {1}: {2}", new Object[] { txnLog, s, m });
     outstandingStores.remove(s);
     respondedStores.add(s);
-    abort(s, m.backoffc);
+    String code = m.messages.get(0);
+    code = code.split(" ")[0];
+    abort(s, m.backoffc, code);
     if (s instanceof RemoteStore) {
       // Remove old objects from our cache.
       RemoteStore store = (RemoteStore) s;
@@ -196,7 +198,9 @@ public class TransactionPrepare {
         "{0} failed to prepare at {1}: {2}", new Object[] { txnLog, w, m });
     outstandingWorkers.remove(w);
     respondedWorkers.add(w);
-    abort(w, m.backoffc);
+    String code = m.messages.get(0);
+    code = code.split(" ")[0];
+    abort(w, m.backoffc, code);
     // TODO: handle conflicts?
     cleanUp();
   }
@@ -308,7 +312,7 @@ public class TransactionPrepare {
         && currentStatus != Status.COMMITTED) {
       WORKER_TRANSACTION_LOGGER.log(Level.FINE,
           "{0} aborted during prepare by external actor", txnLog);
-      runAbort(BackoffCase.BOnon);
+      runAbort(BackoffCase.BOnon, "ex");
     }
     if (currentStatus == Status.ABORTING) cleanUp();
   }
@@ -317,12 +321,13 @@ public class TransactionPrepare {
    * Initiate an abort due to the RemoteWorker cause indicating a problem.
    * @param cause the failed worker that initiated the abort.
    */
-  private synchronized void abort(RemoteWorker cause, BackoffCase backoffc) {
+  private synchronized void abort(RemoteWorker cause, BackoffCase backoffc,
+      String code) {
     if (currentStatus != Status.ABORTING && currentStatus != Status.COMMITTING
         && currentStatus != Status.COMMITTED) {
       WORKER_TRANSACTION_LOGGER.log(Level.FINE,
           "{0} aborted during prepare by {1}", new Object[] { txnLog, cause });
-      runAbort(backoffc);
+      runAbort(backoffc, code);
     }
   }
 
@@ -330,19 +335,20 @@ public class TransactionPrepare {
    * Initiate an abort due to the store cause indicating a problem.
    * @param cause the failed store that initiated the abort.
    */
-  private synchronized void abort(Store cause, BackoffCase backoffc) {
+  private synchronized void abort(Store cause, BackoffCase backoffc,
+      String code) {
     if (currentStatus != Status.ABORTING && currentStatus != Status.COMMITTING
         && currentStatus != Status.COMMITTED) {
       WORKER_TRANSACTION_LOGGER.log(Level.FINE,
           "{0} aborted during prepare by {1}", new Object[] { txnLog, cause });
-      runAbort(backoffc);
+      runAbort(backoffc, code);
     }
   }
 
   /**
    * Actually perform abort round, updating state and sending messages.
    */
-  private synchronized void runAbort(BackoffCase backoffc) {
+  private synchronized void runAbort(BackoffCase backoffc, String code) {
     currentStatus = Status.ABORTING;
 
     // Clear out nodes that we didn't contact and shouldn't contact.
@@ -373,7 +379,7 @@ public class TransactionPrepare {
     }
 
     // Flag that local locks should be released.
-    txnLog.flagRetry("failure during prepare phase", backoffc);
+    txnLog.flagRetry(code + " failure during prepare phase", backoffc);
     txnLog.prepare = null;
   }
 

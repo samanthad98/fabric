@@ -759,23 +759,27 @@ public final class Worker {
 
     // Flag for triggering backoff on alternate retries.
     BackoffCase doBackoff = BackoffCase.BO;
+    String casecode = "0";
 
     int backoff = 1;
     while (!success) {
       if (backoffEnabled) {
         switch (doBackoff) {
         case Pause:
+          WORKER_TRANSACTION_LOGGER.log(Level.INFO,
+              "Backoff.Pause because " + casecode);
           break;
 
         case BOnon:
           tm.stats.addBackoffCount(backoff);
+          WORKER_TRANSACTION_LOGGER.log(Level.INFO,
+              "Backoff.BOnon because " + casecode);
           if (backoff > 32) {
             while (true) {
               try {
                 long t = Math.round(Math.random() * backoff);
                 Thread.sleep(t);
                 tm.stats.addBackoffTime(t);
-                WORKER_TRANSACTION_LOGGER.log(Level.INFO, "slept for " + t);
                 break;
               } catch (InterruptedException e) {
                 Logging.logIgnoredInterruptedException(e);
@@ -786,13 +790,14 @@ public final class Worker {
 
         case BO:
           tm.stats.addBackoffCount(backoff);
+          WORKER_TRANSACTION_LOGGER.log(Level.INFO,
+              "Backoff.BO because " + casecode);
           if (backoff > 32) {
             while (true) {
               try {
                 long t = Math.round(Math.random() * backoff);
                 Thread.sleep(t);
                 tm.stats.addBackoffTime(t);
-                WORKER_TRANSACTION_LOGGER.log(Level.INFO, "slept for " + t);
                 break;
               } catch (InterruptedException e) {
                 Logging.logIgnoredInterruptedException(e);
@@ -827,6 +832,8 @@ public final class Worker {
       } catch (TransactionRestartingException e) {
         success = false;
         doBackoff = e.backoffc;
+        casecode = e.getCause().getMessage();
+        casecode = casecode.split(" ")[0];
 
         TransactionID currentTid = tm.getCurrentTid();
         if (e.tid.isDescendantOf(currentTid))
@@ -860,6 +867,8 @@ public final class Worker {
           } catch (TransactionRestartingException e) {
             success = false;
             doBackoff = e.backoffc;
+            casecode = e.getCause().getMessage();
+            casecode = casecode.split(" ")[0];
 
             if (!autoRetry) {
               throw new AbortException(
@@ -889,7 +898,8 @@ public final class Worker {
 
         // If successful, log the statistics of the current transaction
         if (success) {
-          WORKER_TRANSACTION_LOGGER.log(Level.INFO, tm.stats.toString());
+          WORKER_TRANSACTION_LOGGER.log(Level.INFO,
+              "[NOT IN STATS] " + tm.stats.toString());
           tm.stats.reset();
         }
 

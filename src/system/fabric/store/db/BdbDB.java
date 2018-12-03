@@ -1,7 +1,6 @@
 package fabric.store.db;
 
 import static com.sleepycat.je.OperationStatus.SUCCESS;
-
 import static fabric.common.Logging.STORE_DB_LOGGER;
 
 import java.io.ByteArrayInputStream;
@@ -181,7 +180,7 @@ public class BdbDB extends ObjectDB {
             // after prepare was done but before this call.
             abortPrepare(tid, worker);
             throw new TransactionPrepareFailedException(
-                "Aborted by another thread");
+                "57 Aborted by another thread");
           case PREPARED:
             throw new InternalError(
                 "Attempting to finish an already finished prepare.");

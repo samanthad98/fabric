@@ -280,7 +280,7 @@ public final class PrepareRequest {
       try {
         tm.checkPerms(worker, reads.keySet(), writes);
       } catch (AccessException e) {
-        throw new TransactionPrepareFailedException(e.getMessage(),
+        throw new TransactionPrepareFailedException("52 " + e.getMessage(),
             BackoffCase.Pause);
       }
     }
@@ -288,7 +288,7 @@ public final class PrepareRequest {
     try {
       database.beginTransaction(tid, worker);
     } catch (final AccessException e) {
-      throw new TransactionPrepareFailedException("Insufficient privileges",
+      throw new TransactionPrepareFailedException("52 Insufficient privileges",
           BackoffCase.Pause);
     }
 

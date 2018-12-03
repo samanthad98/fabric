@@ -14,7 +14,6 @@ import static fabric.worker.transaction.Log.CommitState.Values.PREPARING;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -254,7 +253,7 @@ public final class TransactionManager {
     HOTOS_LOGGER.log(Level.FINEST, "aborting {0}", current);
 
     // Set the retry flag in all our children, if that hasn't happened already.
-    current.flagRetry("manager triggered abort", b);
+    current.flagRetry("2 manager triggered abort", b);
 
     // Wait for all other threads to finish.
     current.waitForThreads();
@@ -789,9 +788,9 @@ public final class TransactionManager {
                   // finish their 2PC
                   //waitsFor.add(lock);
                   lock.flagRetry(
-                      "writer " + current.tid + " wants to write "
+                      "3 writer " + current.tid + " wants to write "
                           + obj.$getStore() + "/" + obj.$getOnum(),
-                      BackoffCase.BOnon);
+                      BackoffCase.BO);
                 }
               }
 
@@ -970,8 +969,7 @@ public final class TransactionManager {
     }
 
     // Go through each store and send check messages in parallel.
-    for (Iterator<Store> storeIt = stores.iterator(); storeIt.hasNext();) {
-      final Store store = storeIt.next();
+    for (Store store : stores) {
       final LongKeyMap<Integer> reads =
           checkingLog.getReadsForStore(store, true);
       NamedRunnable runnable =
