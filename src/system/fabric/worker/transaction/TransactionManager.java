@@ -14,6 +14,7 @@ import static fabric.worker.transaction.Log.CommitState.Values.PREPARING;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -969,7 +970,8 @@ public final class TransactionManager {
     }
 
     // Go through each store and send check messages in parallel.
-    for (Store store : stores) {
+    for (Iterator<Store> storeIt = stores.iterator(); storeIt.hasNext();) {
+      final Store store = storeIt.next();
       final LongKeyMap<Integer> reads =
           checkingLog.getReadsForStore(store, true);
       NamedRunnable runnable =

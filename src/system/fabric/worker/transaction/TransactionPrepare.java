@@ -124,8 +124,11 @@ public class TransactionPrepare {
         "{0} failed to prepare at {1}: {2}", new Object[] { txnLog, s, m });
     outstandingStores.remove(s);
     respondedStores.add(s);
-    String code = m.messages.get(0);
-    code = code.split(" ")[0];
+    String code = "";
+    for (String message : m.messages) {
+      code = code + message.split(" ")[0] + " ";
+    }
+    code = code.trim();
     abort(s, m.backoffc, code);
     if (s instanceof RemoteStore) {
       // Remove old objects from our cache.
@@ -198,8 +201,11 @@ public class TransactionPrepare {
         "{0} failed to prepare at {1}: {2}", new Object[] { txnLog, w, m });
     outstandingWorkers.remove(w);
     respondedWorkers.add(w);
-    String code = m.messages.get(0);
-    code = code.split(" ")[0];
+    String code = "";
+    for (String message : m.messages) {
+      code = code + message.split(" ")[0] + " ";
+    }
+    code = code.trim();
     abort(w, m.backoffc, code);
     // TODO: handle conflicts?
     cleanUp();

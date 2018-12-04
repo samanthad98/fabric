@@ -833,7 +833,7 @@ public final class Worker {
         success = false;
         doBackoff = e.backoffc;
         casecode = e.getCause().getMessage();
-        casecode = casecode.split(" ")[0];
+        casecode = casecode.split("[a-zA-Z]")[0].trim();
 
         TransactionID currentTid = tm.getCurrentTid();
         if (e.tid.isDescendantOf(currentTid))
@@ -868,7 +868,7 @@ public final class Worker {
             success = false;
             doBackoff = e.backoffc;
             casecode = e.getCause().getMessage();
-            casecode = casecode.split(" ")[0];
+            casecode = casecode.split("[a-zA-Z]")[0].trim();
 
             if (!autoRetry) {
               throw new AbortException(

@@ -72,6 +72,7 @@ public class AtomicExt_c extends FabILExt_c {
     String doBackoff = "$doBackoff" + (freshTid++);
     String backoffEnabled = "$backoffEnabled" + (freshTid++);
     String t = "$t" + (freshTid++);
+    String casecode = "$casecode" + (freshTid++);
 
     // @formatter:off
     String block = "{\n" + "  %LS\n"
@@ -80,15 +81,18 @@ public class AtomicExt_c extends FabILExt_c {
         + "  boolean " + backoffEnabled
         + " = fabric.worker.Worker.getWorker().config.txRetryBackoff;\n"
         + "  int " + backoff + " = 1;\n"
+        + "  String " + casecode + " = \"0\";\n"
         + "  fabric.common.util.BackoffWrapper.BackoffCase " + doBackoff + " = fabric.common.util.BackoffWrapper.BackoffCase.BO;\n"
         + "  boolean " + retryFlag + " = true;\n"
         + "  " + label + ": for (boolean " + successFlag + " = false; !" + successFlag + "; ) {\n"
         + "    if (" + backoffEnabled +") {\n"
         + "      switch (" + doBackoff + ") {\n"
         + "        case Pause:\n"
+        + "          fabric.common.Logging.WORKER_TRANSACTION_LOGGER.log(java.util.logging.Level.INFO, \"Backoff.Pause becasue \" + " + casecode + ");\n"
         + "          break;\n"
         + "        case BOnon:\n"
         + "          " + tm + ".stats.addBackoffCount(" + backoff + ");\n"
+        + "          fabric.common.Logging.WORKER_TRANSACTION_LOGGER.log(java.util.logging.Level.INFO, \"Backoff.BOnon becasue \" + " + casecode + ");\n"
         + "          if (" + backoff + " > 32) {\n"
         + "            while (true) {\n"
         + "              try {\n"
@@ -103,6 +107,7 @@ public class AtomicExt_c extends FabILExt_c {
         + "          break;\n"
         + "        case BO:\n"
         + "          " + tm + ".stats.addBackoffCount(" + backoff + ");\n"
+        + "          fabric.common.Logging.WORKER_TRANSACTION_LOGGER.log(java.util.logging.Level.INFO, \"Backoff.BO becasue \" + " + casecode + ");\n"
         + "          if (" + backoff + " > 32) {\n"
         + "            while (true) {\n"
         + "              try {\n"
@@ -157,6 +162,8 @@ public class AtomicExt_c extends FabILExt_c {
         + "    catch (final fabric.worker.TransactionRestartingException " + e + ") {\n"
         + "      " + successFlag + " = false;\n"
         + "      " + doBackoff + " = " + e + ".backoffc;\n"
+        + "      " + casecode + " = " + e + ".getCause().getMessage();\n"
+        + "      " + casecode + " = " + casecode + ".split(\"[a-zA-Z]\")[0].trim();\n"
         + "      fabric.common.TransactionID " + currentTid + " = \n"
         + "        " + tm + ".getCurrentTid();\n"
         + "      if (" + e + ".tid.isDescendantOf(" + currentTid + "))\n"
@@ -186,6 +193,8 @@ public class AtomicExt_c extends FabILExt_c {
         + "        catch (final fabric.worker.TransactionRestartingException " + e + ") {\n"
         + "          " + successFlag + " = false;\n"
         + "          " + doBackoff + " = " + e + ".backoffc;\n"
+        + "          " + casecode + " = " + e + ".getCause().getMessage();\n"
+        + "          " + casecode + " = " + casecode + ".split(\"[a-zA-Z]\")[0].trim();\n"
         + "          fabric.common.TransactionID " + currentTid + " = \n"
         + "            " + tm + ".getCurrentTid();\n"
         + "          if (" + currentTid + " != null) {\n"
