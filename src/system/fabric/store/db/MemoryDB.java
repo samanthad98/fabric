@@ -110,7 +110,7 @@ public class MemoryDB extends ObjectDB {
             // after prepare was done but before this call.
             abortPrepare(tid, worker);
             throw new TransactionPrepareFailedException(
-                "Aborted by another thread");
+                "57 Aborted by another thread");
           case PREPARED:
             throw new InternalError(
                 "Attempting to finish an already finished prepare.");

@@ -79,24 +79,24 @@ public abstract class ObjectDB {
      * State of a PendingTransaction at the store.
      */
     public static enum State {
-      /**
-       * Began preparing but not finished preparing.
-       * May abort due to a lock conflict or a concurrent abort message from the
-       * worker.
-       */
-      PREPARING,
-      /**
-       * Began preparing but not finished preparing and is now marked to abort.
-       * This state happens when an abort message arrives from the worker and
-       * the prepare message hasn't finished processing.
-       */
-      ABORTING,
-      /**
-       * Finished preparing but not yet committed.
-       * Can still abort, but this indicates the prepare message has finished
-       * being handled.
-       */
-      PREPARED;
+        /**
+         * Began preparing but not finished preparing.
+         * May abort due to a lock conflict or a concurrent abort message from the
+         * worker.
+         */
+        PREPARING,
+        /**
+         * Began preparing but not finished preparing and is now marked to abort.
+         * This state happens when an abort message arrives from the worker and
+         * the prepare message hasn't finished processing.
+         */
+        ABORTING,
+        /**
+         * Finished preparing but not yet committed.
+         * Can still abort, but this indicates the prepare message has finished
+         * being handled.
+         */
+        PREPARED;
     }
 
     public final long tid;
@@ -308,7 +308,7 @@ public abstract class ObjectDB {
       try {
         db.rwLocks.acquireWriteLock(obj.getOnum(), this);
       } catch (UnableToLockException e) {
-        throw new TransactionPrepareFailedException("Object " + obj.getOnum()
+        throw new TransactionPrepareFailedException("54 Object " + obj.getOnum()
             + " has been locked by an uncommitted transaction.");
       }
 
@@ -316,7 +316,7 @@ public abstract class ObjectDB {
         synchronized (this) {
           if (state == State.ABORTING) {
             throw new TransactionPrepareFailedException(
-                "Trying to add a create for an aborting transaction.");
+                "55 Trying to add a create for an aborting transaction.");
           }
           // Don't freak out on prepared, this is called to deserialize in BdbDB
           creates.add(obj);
@@ -337,7 +337,7 @@ public abstract class ObjectDB {
       try {
         db.rwLocks.acquireWriteLock(obj.getOnum(), this);
       } catch (UnableToLockException e) {
-        throw new TransactionPrepareFailedException("Object " + obj.getOnum()
+        throw new TransactionPrepareFailedException("54 Object " + obj.getOnum()
             + " has been locked by an uncommitted transaction.");
       }
 
@@ -345,7 +345,7 @@ public abstract class ObjectDB {
         synchronized (this) {
           if (state == State.ABORTING) {
             throw new TransactionPrepareFailedException(
-                "Trying to add a write for an aborting transaction.");
+                "55 Trying to add a write for an aborting transaction.");
           }
           // Don't freak out on prepared, this is called to deserialize in BdbDB
           writes.add(obj);
@@ -366,7 +366,7 @@ public abstract class ObjectDB {
       try {
         db.rwLocks.acquireReadLock(onum, this);
       } catch (UnableToLockException e) {
-        throw new TransactionPrepareFailedException("Object " + onum
+        throw new TransactionPrepareFailedException("54 Object " + onum
             + " has been write-locked by an uncommitted transaction.");
       }
 
@@ -374,7 +374,7 @@ public abstract class ObjectDB {
         synchronized (this) {
           if (state == State.ABORTING) {
             throw new TransactionPrepareFailedException(
-                "Trying to add a read for an aborting transaction.");
+                "55 Trying to add a read for an aborting transaction.");
           }
           // Don't freak out on prepared, this is called to deserialize in BdbDB
           reads.add(onum);
@@ -492,7 +492,7 @@ public abstract class ObjectDB {
     OidKeyHashMap<PendingTransaction> submap = pendingByTid.get(tid);
     if (submap == null) {
       throw new TransactionPrepareFailedException(versionConflicts,
-          "Aborted by another thread");
+          "57 Aborted by another thread");
     }
 
     PendingTransaction tx;
@@ -500,7 +500,7 @@ public abstract class ObjectDB {
       if (!submap.containsKey(worker)
           || submap.get(worker).state == PendingTransaction.State.ABORTING)
         throw new TransactionPrepareFailedException(versionConflicts,
-            "Aborted by another thread");
+            "57 Aborted by another thread");
 
       tx = submap.get(worker);
     }
@@ -514,7 +514,7 @@ public abstract class ObjectDB {
       curVersion = getVersion(onum);
     } catch (AccessException e) {
       throw new TransactionPrepareFailedException(versionConflicts,
-          e.getMessage());
+          "52 " + e.getMessage());
     }
 
     if (curVersion != version) {
@@ -544,7 +544,7 @@ public abstract class ObjectDB {
     OidKeyHashMap<PendingTransaction> submap = pendingByTid.get(tid);
     if (submap == null) {
       throw new TransactionPrepareFailedException(versionConflicts,
-          "Aborted by another thread");
+          "57 Aborted by another thread");
     }
 
     long onum = obj.getOnum();
@@ -553,7 +553,7 @@ public abstract class ObjectDB {
       if (!submap.containsKey(worker)
           || submap.get(worker).state == PendingTransaction.State.ABORTING)
         throw new TransactionPrepareFailedException(versionConflicts,
-            "Aborted by another thread");
+            "57 Aborted by another thread");
       tx = submap.get(worker);
     }
 
@@ -566,7 +566,7 @@ public abstract class ObjectDB {
       // Make sure the onum doesn't already exist in the database.
       if (exists(onum)) {
         throw new TransactionPrepareFailedException(versionConflicts,
-            "Object " + onum + " already exists.");
+            "56 Object " + onum + " already exists.");
       }
 
       // Set the object's initial version number.

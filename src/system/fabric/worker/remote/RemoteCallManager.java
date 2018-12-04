@@ -227,7 +227,7 @@ public class RemoteCallManager extends MessageToWorkerHandler {
     try {
       Log log = TransactionRegistry.getInnermostLog(msg.tid);
       if (log == null)
-        throw new TransactionPrepareFailedException("No such transaction");
+        throw new TransactionPrepareFailedException("51 No such transaction");
 
       // Commit up to the top level.
       TransactionManager tm = TransactionManager.getInstance();

@@ -253,7 +253,7 @@ public final class TransactionManager {
     HOTOS_LOGGER.log(Level.FINEST, "aborting {0}", current);
 
     // Set the retry flag in all our children, if that hasn't happened already.
-    current.flagRetry("manager triggered abort");
+    current.flagRetry("2 manager triggered abort");
 
     // Wait for all other threads to finish.
     current.waitForThreads();
@@ -783,7 +783,7 @@ public final class TransactionManager {
                   // Don't wait for readers, either they'll abort later on or
                   // finish their 2PC
                   //waitsFor.add(lock);
-                  lock.flagRetry("writer " + current.tid + " wants to write "
+                  lock.flagRetry("3 writer " + current.tid + " wants to write "
                       + obj.$getStore() + "/" + obj.$getOnum());
                 }
               }

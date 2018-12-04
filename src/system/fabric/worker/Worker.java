@@ -758,6 +758,7 @@ public final class Worker {
 
     // Flag for triggering backoff on alternate retries.
     boolean doBackoff = true;
+    String casecode = "0";
 
     int backoff = 1;
     while (!success) {
@@ -770,7 +771,6 @@ public final class Worker {
                 long t = Math.round(Math.random() * backoff);
                 Thread.sleep(t);
                 tm.stats.addBackoffTime(t);
-                WORKER_TRANSACTION_LOGGER.log(Level.INFO, "slept for " + t);
                 break;
               } catch (InterruptedException e) {
                 Logging.logIgnoredInterruptedException(e);
@@ -781,7 +781,7 @@ public final class Worker {
           if (backoff < 5000) backoff *= 2;
         }
 
-        doBackoff = backoff <= 32 || !doBackoff;
+//        doBackoff = backoff <= 32 || !doBackoff;
       }
 
       success = true;
@@ -805,6 +805,8 @@ public final class Worker {
         continue;
       } catch (TransactionRestartingException e) {
         success = false;
+        casecode = e.getCause().getMessage();
+        casecode = casecode.split("[a-zA-Z]")[0].trim();
 
         TransactionID currentTid = tm.getCurrentTid();
         if (e.tid.isDescendantOf(currentTid))
@@ -837,6 +839,8 @@ public final class Worker {
             success = false;
           } catch (TransactionRestartingException e) {
             success = false;
+            casecode = e.getCause().getMessage();
+            casecode = casecode.split("[a-zA-Z]")[0].trim();
 
             if (!autoRetry) {
               throw new AbortException(

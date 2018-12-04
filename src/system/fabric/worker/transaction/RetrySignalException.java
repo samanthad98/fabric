@@ -8,10 +8,10 @@ import fabric.common.exceptions.FabricRuntimeException;
 public class RetrySignalException extends FabricRuntimeException {
 
   public RetrySignalException(String message) {
-    super("Retrying due to " + message);
+    super(message.split(" ")[0] + " Retrying due to " + message);
   }
 
   public RetrySignalException(String message, Throwable cause) {
-    super("Retrying due to " + message, cause);
+    super(message.split(" ")[0] + " Retrying due to " + message, cause);
   }
 }

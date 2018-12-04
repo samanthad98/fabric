@@ -171,7 +171,7 @@ public final class ReadMap {
           Logging.log(WORKER_DEADLOCK_LOGGER, Level.FINEST,
               "Cache updated for {0}, aborting reader {1}", obj.onum, reader);
         }
-        reader.flagRetry(reason);
+        reader.flagRetry("4 " + reason);
       }
     }
 

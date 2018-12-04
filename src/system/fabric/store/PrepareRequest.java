@@ -279,14 +279,14 @@ public final class PrepareRequest {
       try {
         tm.checkPerms(worker, reads.keySet(), writes);
       } catch (AccessException e) {
-        throw new TransactionPrepareFailedException(e.getMessage());
+        throw new TransactionPrepareFailedException("52 " + e.getMessage());
       }
     }
 
     try {
       database.beginTransaction(tid, worker);
     } catch (final AccessException e) {
-      throw new TransactionPrepareFailedException("Insufficient privileges");
+      throw new TransactionPrepareFailedException("52 Insufficient privileges");
     }
 
     try {
@@ -315,6 +315,7 @@ public final class PrepareRequest {
         TransactionPrepareFailedException fail =
             new TransactionPrepareFailedException(failures);
         fail.versionConflicts.putAll(versionConflicts);
+        fail.messages.add("53 server side version conflict");
         throw fail;
       }
 
