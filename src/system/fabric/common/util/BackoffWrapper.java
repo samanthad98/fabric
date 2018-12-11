@@ -19,5 +19,14 @@ public class BackoffWrapper {
       return false;
     }
 
+//    public static BackoffCase codetrans(String code) {
+//      if (code.equals("53")) {
+//        return Pause;
+//      } else if (code.equals("54")) {
+//        return BO;
+//      } else {
+//        return BO;
+//      }
+//    }
   }
 }

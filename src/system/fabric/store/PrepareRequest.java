@@ -318,7 +318,10 @@ public final class PrepareRequest {
         TransactionPrepareFailedException fail =
             new TransactionPrepareFailedException(failures);
         fail.versionConflicts.putAll(versionConflicts);
-        fail.messages.add("53 server side version conflict");
+        if (failures.isEmpty()) {
+          fail.messages.add("53 server side version conflict");
+          fail.backoffc = BackoffCase.Pause;
+        }
         throw fail;
       }
 

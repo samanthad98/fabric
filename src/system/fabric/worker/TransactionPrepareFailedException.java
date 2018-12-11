@@ -91,8 +91,10 @@ public class TransactionPrepareFailedException extends FabricException {
 
       if (exc.messages != null) messages.addAll(exc.messages);
 
-      if (this.backoffc.weakerThan(exc.backoffc)) {
-        this.backoffc = exc.backoffc;
+      if (exc.backoffc != null) {
+        if (this.backoffc.weakerThan(exc.backoffc)) {
+          this.backoffc = exc.backoffc;
+        }
       }
     }
   }

@@ -766,14 +766,10 @@ public final class Worker {
       if (backoffEnabled) {
         switch (doBackoff) {
         case Pause:
-          WORKER_TRANSACTION_LOGGER.log(Level.INFO,
-              "Backoff.Pause because " + casecode);
           break;
 
         case BOnon:
           tm.stats.addBackoffCount(backoff);
-          WORKER_TRANSACTION_LOGGER.log(Level.INFO,
-              "Backoff.BOnon because " + casecode);
           if (backoff > 32) {
             while (true) {
               try {
@@ -790,8 +786,6 @@ public final class Worker {
 
         case BO:
           tm.stats.addBackoffCount(backoff);
-          WORKER_TRANSACTION_LOGGER.log(Level.INFO,
-              "Backoff.BO because " + casecode);
           if (backoff > 32) {
             while (true) {
               try {

@@ -13,7 +13,6 @@ public final class TransactionRestartingException
    * Identifies the transaction that is to be restarted.
    */
   public final TransactionID tid;
-  public BackoffCase backoffc;
 
   /**
    * @param tid
