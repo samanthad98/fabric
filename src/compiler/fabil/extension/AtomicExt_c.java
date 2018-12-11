@@ -102,6 +102,7 @@ public class AtomicExt_c extends FabILExt_c {
         + "        }\n"
         + "        if (" + backoff + " < 5000) " + backoff + " *= 2;\n"
         + "      }\n"
+        + "      " + doBackoff + " = " + backoff + " <= 32 || !" + doBackoff + ";\n"
         + "    }\n"
         + "    " + successFlag + " = true;\n"
         + "    %S\n"
