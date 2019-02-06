@@ -6,6 +6,7 @@ import java.util.Map;
 
 import fabric.common.SerializedObject;
 import fabric.common.exceptions.FabricException;
+import fabric.common.util.CaseCode;
 import fabric.common.util.OidKeyHashMap;
 import fabric.net.RemoteNode;
 
@@ -17,28 +18,51 @@ public class TransactionPrepareFailedException extends FabricException {
 
   public final List<String> messages;
 
+  public List<CaseCode> casecode;
+
   public TransactionPrepareFailedException(
       TransactionRestartingException cause) {
     this.messages = new ArrayList<>();
     String str = cause.getCause().getMessage();
     this.messages.add(str);
     this.versionConflicts = new OidKeyHashMap<>();
+    this.casecode = cause.casecode;
+  }
+
+  public TransactionPrepareFailedException(
+      OidKeyHashMap<SerializedObject> versionConflicts, CaseCode c) {
+    this.versionConflicts = versionConflicts;
+    this.messages = new ArrayList<>();
+    this.casecode = new ArrayList<>();
+    this.casecode.add(c);
   }
 
   public TransactionPrepareFailedException(
       OidKeyHashMap<SerializedObject> versionConflicts) {
     this.versionConflicts = versionConflicts;
     this.messages = new ArrayList<>();
+    this.casecode = new ArrayList<>();
+  }
+
+  public TransactionPrepareFailedException(
+      OidKeyHashMap<SerializedObject> versionConflicts, List<String> messages,
+      CaseCode c) {
+    this.versionConflicts = versionConflicts;
+    this.messages = messages;
+    this.casecode = new ArrayList<>();
+    this.casecode.add(c);
   }
 
   public TransactionPrepareFailedException(
       OidKeyHashMap<SerializedObject> versionConflicts, List<String> messages) {
     this.versionConflicts = versionConflicts;
     this.messages = messages;
+    this.casecode = new ArrayList<>();
   }
 
   public TransactionPrepareFailedException(
       Map<RemoteNode<?>, TransactionPrepareFailedException> failures) {
+    this.casecode = new ArrayList<>();
     this.versionConflicts = new OidKeyHashMap<>();
 
     messages = new ArrayList<>();
@@ -50,12 +74,15 @@ public class TransactionPrepareFailedException extends FabricException {
         for (String s : exn.messages)
           messages.add(entry.getKey() + ": " + s);
       }
+
+      this.casecode.addAll(exn.casecode);
     }
   }
 
   public TransactionPrepareFailedException(
       List<TransactionPrepareFailedException> causes) {
     this.versionConflicts = new OidKeyHashMap<>();
+    this.casecode = new ArrayList<>();
 
     messages = new ArrayList<>();
     for (TransactionPrepareFailedException exc : causes) {
@@ -63,13 +90,29 @@ public class TransactionPrepareFailedException extends FabricException {
         versionConflicts.putAll(exc.versionConflicts);
 
       if (exc.messages != null) messages.addAll(exc.messages);
+
+      this.casecode.addAll(exc.casecode);
     }
   }
 
   public TransactionPrepareFailedException(
-      OidKeyHashMap<SerializedObject> versionConflicts, String message) {
+      OidKeyHashMap<SerializedObject> versionConflicts, String message,
+      CaseCode c) {
+    this.casecode = new ArrayList<>();
+    this.casecode.add(c);
     this.versionConflicts = versionConflicts;
     messages = java.util.Collections.singletonList(message);
+  }
+
+  public TransactionPrepareFailedException(
+      OidKeyHashMap<SerializedObject> versionConflicts, String message) {
+    this.casecode = new ArrayList<>();
+    this.versionConflicts = versionConflicts;
+    messages = java.util.Collections.singletonList(message);
+  }
+
+  public TransactionPrepareFailedException(String message, CaseCode c) {
+    this(new OidKeyHashMap<SerializedObject>(), message, c);
   }
 
   public TransactionPrepareFailedException(String message) {

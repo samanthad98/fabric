@@ -15,6 +15,7 @@ import com.google.common.collect.TreeMultiset;
 
 import fabric.common.Logging;
 import fabric.common.TransactionID;
+import fabric.common.util.CaseCode;
 import fabric.common.util.LongHashSet;
 import fabric.common.util.LongIterator;
 import fabric.common.util.LongKeyHashMap;
@@ -301,7 +302,7 @@ public class DeadlockDetectorThread extends Thread {
       // Abort the transaction.
       WORKER_DEADLOCK_LOGGER.log(Level.FINE, "Aborting {0} to break deadlock",
           toAbort);
-      toAbort.flagRetry("1 breaking deadlocks in " + cycles);
+      toAbort.flagRetry("1 breaking deadlocks in " + cycles, CaseCode.Deadlock);
 
       synchronized (this.newRequest) {
         this.waitingLogs.remove(toAbort);

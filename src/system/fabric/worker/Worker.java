@@ -764,7 +764,7 @@ public final class Worker {
     while (!success) {
       if (backoffEnabled) {
         if (doBackoff) {
-          tm.stats.addBackoffCount(backoff);
+          tm.stats.addBackoffCount();
           if (backoff > 32) {
             while (true) {
               try {
@@ -778,7 +778,10 @@ public final class Worker {
             }
           }
 
-          if (backoff < 5000) backoff *= 2;
+          if (backoff < 5000) {
+            backoff *= 2;
+            tm.stats.addBackoffIncrease();
+          }
         }
 
         doBackoff = backoff <= 32 || !doBackoff;

@@ -9,6 +9,7 @@ import java.util.List;
 import fabric.common.SerializedObject;
 import fabric.common.exceptions.ProtocolError;
 import fabric.common.net.RemoteIdentity;
+import fabric.common.util.CaseCode;
 import fabric.common.util.LongKeyMap;
 import fabric.common.util.OidKeyHashMap;
 import fabric.worker.Store;
@@ -31,6 +32,8 @@ public class WorkerPrepareFailedMessage extends AsyncMessage {
 
   public final List<String> messages;
 
+  public List<CaseCode> casecode;
+
   /**
    * Used to prepare transactions at remote workers.
    */
@@ -40,6 +43,7 @@ public class WorkerPrepareFailedMessage extends AsyncMessage {
     this.tid = tid;
     this.conflicts = e.versionConflicts;
     this.messages = e.messages;
+    this.casecode = e.casecode;
   }
 
   // ////////////////////////////////////////////////////////////////////////////
@@ -76,6 +80,11 @@ public class WorkerPrepareFailedMessage extends AsyncMessage {
     for (String msg : messages) {
       out.writeUTF(msg);
     }
+
+    out.writeInt(casecode.size());
+    for (CaseCode c : casecode) {
+      out.writeUTF(c.name());
+    }
   }
 
   /* readMessage */
@@ -98,6 +107,12 @@ public class WorkerPrepareFailedMessage extends AsyncMessage {
     this.messages = new ArrayList<>(size);
     for (int i = 0; i < size; i++) {
       messages.add(in.readUTF());
+    }
+
+    size = in.readInt();
+    this.casecode = new ArrayList<>(size);
+    for (int i = 0; i < size; i++) {
+      casecode.add(CaseCode.valueOf(in.readUTF()));
     }
   }
 

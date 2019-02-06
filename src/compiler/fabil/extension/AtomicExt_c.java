@@ -88,7 +88,7 @@ public class AtomicExt_c extends FabILExt_c {
         + "    if (" + backoffEnabled +") {\n"
         + "      if (" + doBackoff + ") {"
         + "        fabric.common.Logging.WORKER_TRANSACTION_LOGGER.log(java.util.logging.Level.INFO, \"Backoff becasue \" + " + casecode + ");\n"
-        + "        " + tm + ".stats.addBackoffCount(" + backoff + ");\n"
+        + "        " + tm + ".stats.addBackoffCount();\n"
         + "        if (" + backoff + " > 32) {\n"
         + "          while (true) {\n"
         + "            try {\n"
