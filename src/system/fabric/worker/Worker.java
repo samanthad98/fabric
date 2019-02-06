@@ -12,6 +12,8 @@ import java.lang.reflect.Method;
 import java.security.GeneralSecurityException;
 import java.security.PublicKey;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
@@ -43,6 +45,7 @@ import fabric.common.net.handshake.Protocol;
 import fabric.common.net.naming.NameService;
 import fabric.common.net.naming.NameService.PortType;
 import fabric.common.net.naming.TransitionalNameService;
+import fabric.common.util.CaseCode;
 import fabric.common.util.LongHashSet;
 import fabric.common.util.LongIterator;
 import fabric.common.util.LongSet;
@@ -758,7 +761,7 @@ public final class Worker {
 
     // Flag for triggering backoff on alternate retries.
     boolean doBackoff = true;
-    String casecode = "0";
+    List<CaseCode> casecode = new ArrayList<>();
 
     int backoff = 1;
     while (!success) {
@@ -808,8 +811,7 @@ public final class Worker {
         continue;
       } catch (TransactionRestartingException e) {
         success = false;
-        casecode = e.getCause().getMessage();
-        casecode = casecode.split("[a-zA-Z]")[0].trim();
+        casecode = e.casecode;
 
         TransactionID currentTid = tm.getCurrentTid();
         if (e.tid.isDescendantOf(currentTid))
@@ -842,8 +844,7 @@ public final class Worker {
             success = false;
           } catch (TransactionRestartingException e) {
             success = false;
-            casecode = e.getCause().getMessage();
-            casecode = casecode.split("[a-zA-Z]")[0].trim();
+            casecode = e.casecode;
 
             if (!autoRetry) {
               throw new AbortException(

@@ -166,7 +166,7 @@ public class TxnStats {
         + " TXN ATTEMPTS" + " USING " + fetches + " FETCHES " + fetchWaits
         + " WAITS FOR FETCHES" + " MSGS: " + msgs + " FETCHED: " + fetched
         + " CONFLICTS: " + versionConflicts + " BACKOFFTIME: " + backofftime
-        + " BACKOFFCOUNT: " + backoffcount + " IN " + Long.toHexString(tid)
-        + "]";
+        + " BACKOFFCOUNT: " + backoffcount + " BACKOFFINCREASE: "
+        + backoffincrease + " IN " + Long.toHexString(tid) + "]";
   }
 }
