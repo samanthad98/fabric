@@ -16,8 +16,8 @@ public class TxnStats {
   private int fetches = 0;
   private int fetchWaits = 0;
   private long backofftime = 0;
-  private long backoffcount = 0;<<<<<<<HEAD=======
-  private long backoffincrease = 0;>>>>>>>master
+  private long backoffcount = 0;
+  private long backoffincrease = 0;
   private List<String> msgs = new ArrayList<>();
   private List<String> fetched = new ArrayList<>();
   private List<String> versionConflicts = new ArrayList<>();
@@ -33,10 +33,7 @@ public class TxnStats {
     fetchWaits = 0;
     backofftime = 0;
     backoffcount = 0;
-<<<<<<< HEAD
-=======
     backoffincrease = 0;
->>>>>>> master
     msgs.clear();
     fetched.clear();
     versionConflicts.clear();

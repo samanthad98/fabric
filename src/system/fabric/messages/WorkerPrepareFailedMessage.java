@@ -8,9 +8,9 @@ import java.util.List;
 
 import fabric.common.SerializedObject;
 import fabric.common.exceptions.ProtocolError;
-import fabric.common.net.RemoteIdentity;<<<<<<<HEAD
-import fabric.common.util.BackoffWrapper.BackoffCase;=======
-import fabric.common.util.CaseCode;>>>>>>>master
+import fabric.common.net.RemoteIdentity;
+import fabric.common.util.BackoffWrapper.BackoffCase;
+import fabric.common.util.CaseCode;
 import fabric.common.util.LongKeyMap;
 import fabric.common.util.OidKeyHashMap;
 import fabric.worker.Store;
