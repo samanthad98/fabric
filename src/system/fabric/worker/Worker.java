@@ -12,6 +12,8 @@ import java.lang.reflect.Method;
 import java.security.GeneralSecurityException;
 import java.security.PublicKey;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
@@ -44,6 +46,7 @@ import fabric.common.net.naming.NameService;
 import fabric.common.net.naming.NameService.PortType;
 import fabric.common.net.naming.TransitionalNameService;
 import fabric.common.util.BackoffWrapper.BackoffCase;
+import fabric.common.util.CaseCode;
 import fabric.common.util.LongHashSet;
 import fabric.common.util.LongIterator;
 import fabric.common.util.LongSet;
@@ -759,7 +762,7 @@ public final class Worker {
 
     // Flag for triggering backoff on alternate retries.
     BackoffCase doBackoff = BackoffCase.BO;
-    String casecode = "0";
+    List<CaseCode> casecode = new ArrayList<>();
 
     int backoff = 1;
     while (!success) {
@@ -769,7 +772,7 @@ public final class Worker {
           break;
 
         case BOnon:
-          tm.stats.addBackoffCount(backoff);
+          tm.stats.addBackoffCount();
           if (backoff > 32) {
             while (true) {
               try {
@@ -785,7 +788,7 @@ public final class Worker {
           break;
 
         case BO:
-          tm.stats.addBackoffCount(backoff);
+          tm.stats.addBackoffCount();
           if (backoff > 32) {
             while (true) {
               try {
@@ -798,8 +801,10 @@ public final class Worker {
               }
             }
           }
-
-          if (backoff < 5000) backoff *= 2;
+          if (backoff < 5000) {
+            backoff *= 2;
+            tm.stats.addBackoffIncrease();
+          }
           break;
         }
       }
@@ -826,8 +831,7 @@ public final class Worker {
       } catch (TransactionRestartingException e) {
         success = false;
         doBackoff = e.backoffc;
-        casecode = e.getCause().getMessage();
-        casecode = casecode.split("[a-zA-Z]")[0].trim();
+        casecode = e.casecode;
 
         TransactionID currentTid = tm.getCurrentTid();
         if (e.tid.isDescendantOf(currentTid))
@@ -861,8 +865,7 @@ public final class Worker {
           } catch (TransactionRestartingException e) {
             success = false;
             doBackoff = e.backoffc;
-            casecode = e.getCause().getMessage();
-            casecode = casecode.split("[a-zA-Z]")[0].trim();
+            casecode = e.casecode;
 
             if (!autoRetry) {
               throw new AbortException(
@@ -888,6 +891,13 @@ public final class Worker {
           }
         } else {
           tm.abortTransaction(doBackoff);
+        }
+
+        // If successful, log the statistics of the current transaction
+        if (success) {
+          WORKER_TRANSACTION_LOGGER.log(Level.INFO,
+              "[NOT IN STATS] " + tm.stats.toString());
+          tm.stats.reset();
         }
 
         // If successful, log the statistics of the current transaction

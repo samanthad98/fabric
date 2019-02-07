@@ -9,6 +9,7 @@ import java.util.logging.Level;
 
 import fabric.common.Logging;
 import fabric.common.util.BackoffWrapper.BackoffCase;
+import fabric.common.util.CaseCode;
 import fabric.common.util.ConcurrentOidKeyHashMap;
 import fabric.lang.Object._Impl;
 import fabric.worker.FabricSoftRef;
@@ -172,7 +173,7 @@ public final class ReadMap {
           Logging.log(WORKER_DEADLOCK_LOGGER, Level.FINEST,
               "Cache updated for {0}, aborting reader {1}", obj.onum, reader);
         }
-        reader.flagRetry("4 " + reason, BackoffCase.Pause);
+        reader.flagRetry(reason, BackoffCase.Pause, CaseCode.LocalVC);
       }
     }
 

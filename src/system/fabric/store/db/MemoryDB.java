@@ -17,6 +17,7 @@ import fabric.common.SysUtil;
 import fabric.common.exceptions.AccessException;
 import fabric.common.net.RemoteIdentity;
 import fabric.common.util.BackoffWrapper.BackoffCase;
+import fabric.common.util.CaseCode;
 import fabric.common.util.ConcurrentLongKeyHashMap;
 import fabric.common.util.ConcurrentLongKeyMap;
 import fabric.common.util.LongHashSet;
@@ -111,7 +112,8 @@ public class MemoryDB extends ObjectDB {
             // after prepare was done but before this call.
             abortPrepare(tid, worker);
             throw new TransactionPrepareFailedException(
-                "57 Aborted by another thread", BackoffCase.Pause);
+                "Aborted by another thread", CaseCode.RAborted,
+                BackoffCase.Pause);
           case PREPARED:
             throw new InternalError(
                 "Attempting to finish an already finished prepare.");

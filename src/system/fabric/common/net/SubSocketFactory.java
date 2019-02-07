@@ -93,6 +93,11 @@ public final class SubSocketFactory<Node extends RemoteNode<Node>> {
         SocketAddress addr = nameService.resolve(node.name, portType);
         SocketAddress local =
             nameService.resolve(Worker.getWorkerName(), portType);
+        String connect_info = "connecting to address "
+            + addr.getAddress().toString() + " port " + addr.getPort()
+            + " from " + InetAddress.getByName("localhost");
+
+        NETWORK_CONNECTION_LOGGER.log(Level.INFO, connect_info);
 
         Socket s =
             new Socket(InetAddress.getByName("localhost"), addr.getPort());

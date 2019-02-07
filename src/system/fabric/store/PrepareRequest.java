@@ -15,6 +15,7 @@ import fabric.common.ONumConstants;
 import fabric.common.SerializedObject;
 import fabric.common.exceptions.AccessException;
 import fabric.common.util.BackoffWrapper.BackoffCase;
+import fabric.common.util.CaseCode;
 import fabric.common.util.LongKeyMap;
 import fabric.common.util.OidKeyHashMap;
 import fabric.lang.security.Principal;
@@ -280,16 +281,16 @@ public final class PrepareRequest {
       try {
         tm.checkPerms(worker, reads.keySet(), writes);
       } catch (AccessException e) {
-        throw new TransactionPrepareFailedException("52 " + e.getMessage(),
-            BackoffCase.Pause);
+        throw new TransactionPrepareFailedException(e.getMessage(),
+            CaseCode.RNoPerm, BackoffCase.Pause);
       }
     }
 
     try {
       database.beginTransaction(tid, worker);
     } catch (final AccessException e) {
-      throw new TransactionPrepareFailedException("52 Insufficient privileges",
-          BackoffCase.Pause);
+      throw new TransactionPrepareFailedException("Insufficient privileges",
+          CaseCode.RNoPerm, BackoffCase.Pause);
     }
 
     try {
@@ -319,7 +320,8 @@ public final class PrepareRequest {
             new TransactionPrepareFailedException(failures);
         fail.versionConflicts.putAll(versionConflicts);
         if (failures.isEmpty()) {
-          fail.messages.add("53 server side version conflict");
+          fail.messages.add("server side version conflict");
+          fail.casecode.add(CaseCode.RemoteVC);
           fail.backoffc = BackoffCase.Pause;
         }
         throw fail;

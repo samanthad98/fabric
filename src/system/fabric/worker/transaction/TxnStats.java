@@ -16,7 +16,8 @@ public class TxnStats {
   private int fetches = 0;
   private int fetchWaits = 0;
   private long backofftime = 0;
-  private long backoffcount = 0;
+  private long backoffcount = 0;<<<<<<<HEAD=======
+  private long backoffincrease = 0;>>>>>>>master
   private List<String> msgs = new ArrayList<>();
   private List<String> fetched = new ArrayList<>();
   private List<String> versionConflicts = new ArrayList<>();
@@ -32,6 +33,10 @@ public class TxnStats {
     fetchWaits = 0;
     backofftime = 0;
     backoffcount = 0;
+<<<<<<< HEAD
+=======
+    backoffincrease = 0;
+>>>>>>> master
     msgs.clear();
     fetched.clear();
     versionConflicts.clear();
@@ -147,8 +152,16 @@ public class TxnStats {
   /**
    * Add backoffcount.
    */
-  public void addBackoffCount(long c) {
-    backoffcount = backoffcount + c;
+
+  public void addBackoffCount() {
+    backoffcount = backoffcount + 1;
+  }
+
+  /**
+   * Add backoffincrease.
+   */
+  public void addBackoffIncrease() {
+    backoffincrease = backoffincrease + 1;
   }
 
   @Override
@@ -157,7 +170,7 @@ public class TxnStats {
         + " TXN ATTEMPTS" + " USING " + fetches + " FETCHES " + fetchWaits
         + " WAITS FOR FETCHES" + " MSGS: " + msgs + " FETCHED: " + fetched
         + " CONFLICTS: " + versionConflicts + " BACKOFFTIME: " + backofftime
-        + " BACKOFFCOUNT: " + backoffcount + " IN " + Long.toHexString(tid)
-        + "]";
+        + " BACKOFFCOUNT: " + backoffcount + " BACKOFFINCREASE: "
+        + backoffincrease + " IN " + Long.toHexString(tid) + "]";
   }
 }

@@ -19,6 +19,7 @@ import fabric.common.Threading;
 import fabric.common.Timing;
 import fabric.common.TransactionID;
 import fabric.common.util.BackoffWrapper.BackoffCase;
+import fabric.common.util.CaseCode;
 import fabric.common.util.LongKeyHashMap;
 import fabric.common.util.LongKeyMap;
 import fabric.common.util.OidKeyHashMap;
@@ -451,7 +452,8 @@ public final class Log {
             this);
 
         throw new TransactionRestartingException(this.retrySignal,
-            this.retryCause, this.retryCause.backoffc);
+            this.retryCause, this.retryCause.casecode,
+            this.retryCause.backoffc);
       }
     }
   }
@@ -459,7 +461,7 @@ public final class Log {
   /**
    * Sets the retry flag on this and the logs of all sub-transactions.
    */
-  public void flagRetry(String reason) {
+  public void flagRetry(String reason, CaseCode c) {
     Queue<Log> toFlag = new LinkedList<>();
     toFlag.add(this);
     while (!toFlag.isEmpty()) {
@@ -469,7 +471,7 @@ public final class Log {
         if (log.retrySignal == null || log.retrySignal.isDescendantOf(tid)) {
           log.retrySignal = tid;
           try {
-            throw new RetrySignalException(reason);
+            throw new RetrySignalException(reason, c);
           } catch (RetrySignalException e) {
             log.retryCause = e;
           }
@@ -499,7 +501,10 @@ public final class Log {
     }
   }
 
-  public void flagRetry(String reason, BackoffCase b) {
+  /**
+   * Sets the retry flag on this and the logs of all sub-transactions.
+   */
+  public void flagRetry(String reason, List<CaseCode> c) {
     Queue<Log> toFlag = new LinkedList<>();
     toFlag.add(this);
     while (!toFlag.isEmpty()) {
@@ -509,7 +514,87 @@ public final class Log {
         if (log.retrySignal == null || log.retrySignal.isDescendantOf(tid)) {
           log.retrySignal = tid;
           try {
-            throw new RetrySignalException(reason, b);
+            throw new RetrySignalException(reason, c);
+          } catch (RetrySignalException e) {
+            log.retryCause = e;
+          }
+
+          // Grab the currently marked blocking dependency
+          final Object curWaitingOn = log.waitsOn;
+          if (curWaitingOn != null) {
+            // Run this in a different thread, we need to avoid any deadlocks in
+            // this step.
+            final Log logCopy = log;
+            Threading.getPool().submit(new Runnable() {
+              @Override
+              public void run() {
+                synchronized (curWaitingOn) {
+                  // If still blocked on the object after synchronizing, wake
+                  // the thread that needs to be aborted so it sees retry
+                  // signal.
+                  if (logCopy.waitsOn == curWaitingOn) {
+                    logCopy.waitsOn.notifyAll();
+                  }
+                }
+              }
+            });
+          }
+        }
+      }
+    }
+  }
+
+  public void flagRetry(String reason, BackoffCase bo, CaseCode casecode) {
+    Queue<Log> toFlag = new LinkedList<>();
+    toFlag.add(this);
+    while (!toFlag.isEmpty()) {
+      Log log = toFlag.remove();
+      synchronized (log) {
+        if (log.child != null) toFlag.add(log.child);
+        if (log.retrySignal == null || log.retrySignal.isDescendantOf(tid)) {
+          log.retrySignal = tid;
+          try {
+            throw new RetrySignalException(reason, casecode, bo);
+          } catch (RetrySignalException e) {
+            log.retryCause = e;
+          }
+
+          // Grab the currently marked blocking dependency
+          final Object curWaitingOn = log.waitsOn;
+          if (curWaitingOn != null) {
+            // Run this in a different thread, we need to avoid any deadlocks in
+            // this step.
+            final Log logCopy = log;
+            Threading.getPool().submit(new Runnable() {
+              @Override
+              public void run() {
+                synchronized (curWaitingOn) {
+                  // If still blocked on the object after synchronizing, wake
+                  // the thread that needs to be aborted so it sees retry
+                  // signal.
+                  if (logCopy.waitsOn == curWaitingOn) {
+                    logCopy.waitsOn.notifyAll();
+                  }
+                }
+              }
+            });
+          }
+        }
+      }
+    }
+  }
+
+  public void flagRetry(String reason, BackoffCase b, List<CaseCode> c) {
+    Queue<Log> toFlag = new LinkedList<>();
+    toFlag.add(this);
+    while (!toFlag.isEmpty()) {
+      Log log = toFlag.remove();
+      synchronized (log) {
+        if (log.child != null) toFlag.add(log.child);
+        if (log.retrySignal == null || log.retrySignal.isDescendantOf(tid)) {
+          log.retrySignal = tid;
+          try {
+            throw new RetrySignalException(reason, c, b);
           } catch (RetrySignalException e) {
             log.retryCause = e;
           }

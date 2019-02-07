@@ -10,6 +10,7 @@ import fabric.common.SerializedObject;
 import fabric.common.exceptions.ProtocolError;
 import fabric.common.net.RemoteIdentity;
 import fabric.common.util.BackoffWrapper.BackoffCase;
+import fabric.common.util.CaseCode;
 import fabric.common.util.LongKeyMap;
 import fabric.common.util.OidKeyHashMap;
 import fabric.worker.Store;
@@ -33,6 +34,7 @@ public class StorePrepareFailedMessage extends AsyncMessage {
   public final List<String> messages;
 
   public BackoffCase backoffc;
+  public List<CaseCode> casecode;
 
   /**
    * Used to prepare transactions at remote workers.
@@ -44,6 +46,7 @@ public class StorePrepareFailedMessage extends AsyncMessage {
     this.conflicts = e.versionConflicts;
     this.messages = e.messages;
     this.backoffc = e.backoffc;
+    this.casecode = e.casecode;
   }
 
   // ////////////////////////////////////////////////////////////////////////////
@@ -82,6 +85,11 @@ public class StorePrepareFailedMessage extends AsyncMessage {
     }
 
     out.writeUTF(backoffc.name());
+
+    out.writeInt(casecode.size());
+    for (CaseCode c : casecode) {
+      out.writeUTF(c.name());
+    }
   }
 
   /* readMessage */
@@ -107,6 +115,12 @@ public class StorePrepareFailedMessage extends AsyncMessage {
     }
 
     backoffc = BackoffCase.valueOf(in.readUTF());
+
+    size = in.readInt();
+    this.casecode = new ArrayList<>(size);
+    for (int i = 0; i < size; i++) {
+      casecode.add(CaseCode.valueOf(in.readUTF()));
+    }
   }
 
   @Override

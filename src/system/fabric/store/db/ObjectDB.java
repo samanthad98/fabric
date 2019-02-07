@@ -18,6 +18,7 @@ import fabric.common.SysUtil;
 import fabric.common.exceptions.AccessException;
 import fabric.common.net.RemoteIdentity;
 import fabric.common.util.BackoffWrapper.BackoffCase;
+import fabric.common.util.CaseCode;
 import fabric.common.util.ConcurrentLongKeyHashMap;
 import fabric.common.util.ConcurrentLongKeyMap;
 import fabric.common.util.LongHashSet;
@@ -310,17 +311,17 @@ public abstract class ObjectDB {
         db.rwLocks.acquireWriteLock(obj.getOnum(), this);
       } catch (UnableToLockException e) {
         throw new TransactionPrepareFailedException(
-            "54 Object " + obj.getOnum()
+            "Object " + obj.getOnum()
                 + " has been locked by an uncommitted transaction.",
-            BackoffCase.BO);
+            CaseCode.RNoLock, BackoffCase.BO);
       }
 
       try {
         synchronized (this) {
           if (state == State.ABORTING) {
             throw new TransactionPrepareFailedException(
-                "55 Trying to add a create for an aborting transaction.",
-                BackoffCase.Pause);
+                "Trying to add a create for an aborting transaction.",
+                CaseCode.RInAborting, BackoffCase.Pause);
           }
           // Don't freak out on prepared, this is called to deserialize in BdbDB
           creates.add(obj);
@@ -342,17 +343,17 @@ public abstract class ObjectDB {
         db.rwLocks.acquireWriteLock(obj.getOnum(), this);
       } catch (UnableToLockException e) {
         throw new TransactionPrepareFailedException(
-            "54 Object " + obj.getOnum()
+            "Object " + obj.getOnum()
                 + " has been locked by an uncommitted transaction.",
-            BackoffCase.BO);
+            CaseCode.RNoLock, BackoffCase.BO);
       }
 
       try {
         synchronized (this) {
           if (state == State.ABORTING) {
             throw new TransactionPrepareFailedException(
-                "55 Trying to add a write for an aborting transaction.",
-                BackoffCase.Pause);
+                "Trying to add a write for an aborting transaction.",
+                CaseCode.RInAborting, BackoffCase.Pause);
           }
           // Don't freak out on prepared, this is called to deserialize in BdbDB
           writes.add(obj);
@@ -374,17 +375,17 @@ public abstract class ObjectDB {
         db.rwLocks.acquireReadLock(onum, this);
       } catch (UnableToLockException e) {
         throw new TransactionPrepareFailedException(
-            "54 Object " + onum
+            "Object " + onum
                 + " has been write-locked by an uncommitted transaction.",
-            BackoffCase.BO);
+            CaseCode.RNoLock, BackoffCase.BO);
       }
 
       try {
         synchronized (this) {
           if (state == State.ABORTING) {
             throw new TransactionPrepareFailedException(
-                "55 Trying to add a read for an aborting transaction.",
-                BackoffCase.Pause);
+                "Trying to add a read for an aborting transaction.",
+                CaseCode.RInAborting, BackoffCase.Pause);
           }
           // Don't freak out on prepared, this is called to deserialize in BdbDB
           reads.add(onum);
@@ -502,7 +503,7 @@ public abstract class ObjectDB {
     OidKeyHashMap<PendingTransaction> submap = pendingByTid.get(tid);
     if (submap == null) {
       throw new TransactionPrepareFailedException(versionConflicts,
-          "57 Aborted by another thread");
+          "Aborted by another thread", CaseCode.RAborted, BackoffCase.Pause);
     }
 
     PendingTransaction tx;
@@ -510,7 +511,7 @@ public abstract class ObjectDB {
       if (!submap.containsKey(worker)
           || submap.get(worker).state == PendingTransaction.State.ABORTING)
         throw new TransactionPrepareFailedException(versionConflicts,
-            "57 Aborted by another thread");
+            "Aborted by another thread", CaseCode.RAborted, BackoffCase.Pause);
 
       tx = submap.get(worker);
     }
@@ -524,7 +525,7 @@ public abstract class ObjectDB {
       curVersion = getVersion(onum);
     } catch (AccessException e) {
       throw new TransactionPrepareFailedException(versionConflicts,
-          "52 " + e.getMessage(), BackoffCase.Pause);
+          e.getMessage(), CaseCode.RNoPerm, BackoffCase.Pause);
     }
 
     if (curVersion != version) {
@@ -554,7 +555,7 @@ public abstract class ObjectDB {
     OidKeyHashMap<PendingTransaction> submap = pendingByTid.get(tid);
     if (submap == null) {
       throw new TransactionPrepareFailedException(versionConflicts,
-          "57 Aborted by another thread");
+          "Aborted by another thread", CaseCode.RAborted, BackoffCase.Pause);
     }
 
     long onum = obj.getOnum();
@@ -563,7 +564,7 @@ public abstract class ObjectDB {
       if (!submap.containsKey(worker)
           || submap.get(worker).state == PendingTransaction.State.ABORTING)
         throw new TransactionPrepareFailedException(versionConflicts,
-            "57 Aborted by another thread");
+            "Aborted by another thread", CaseCode.RAborted, BackoffCase.Pause);
       tx = submap.get(worker);
     }
 
@@ -576,7 +577,8 @@ public abstract class ObjectDB {
       // Make sure the onum doesn't already exist in the database.
       if (exists(onum)) {
         throw new TransactionPrepareFailedException(versionConflicts,
-            "56 Object " + onum + " already exists.", BackoffCase.Pause);
+            "Object " + onum + " already exists.", CaseCode.RAborted,
+            BackoffCase.Pause);
       }
 
       // Set the object's initial version number.

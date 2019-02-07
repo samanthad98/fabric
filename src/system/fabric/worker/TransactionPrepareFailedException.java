@@ -7,6 +7,7 @@ import java.util.Map;
 import fabric.common.SerializedObject;
 import fabric.common.exceptions.FabricException;
 import fabric.common.util.BackoffWrapper.BackoffCase;
+import fabric.common.util.CaseCode;
 import fabric.common.util.OidKeyHashMap;
 import fabric.net.RemoteNode;
 
@@ -19,6 +20,7 @@ public class TransactionPrepareFailedException extends FabricException {
   public final List<String> messages;
 
   public BackoffCase backoffc;
+  public List<CaseCode> casecode;
 
   public TransactionPrepareFailedException(
       TransactionRestartingException cause) {
@@ -27,6 +29,17 @@ public class TransactionPrepareFailedException extends FabricException {
     this.messages.add(str);
     this.versionConflicts = new OidKeyHashMap<>();
     backoffc = cause.backoffc;
+    this.casecode = cause.casecode;
+  }
+
+  public TransactionPrepareFailedException(
+      OidKeyHashMap<SerializedObject> versionConflicts, CaseCode c,
+      BackoffCase b) {
+    this.versionConflicts = versionConflicts;
+    this.messages = new ArrayList<>();
+    this.casecode = new ArrayList<>();
+    this.casecode.add(c);
+    this.backoffc = b;
   }
 
   public TransactionPrepareFailedException(
@@ -41,6 +54,17 @@ public class TransactionPrepareFailedException extends FabricException {
     this.versionConflicts = versionConflicts;
     this.messages = new ArrayList<>();
     backoffc = b;
+    this.casecode = new ArrayList<>();
+  }
+
+  public TransactionPrepareFailedException(
+      OidKeyHashMap<SerializedObject> versionConflicts, List<String> messages,
+      CaseCode c) {
+    this.versionConflicts = versionConflicts;
+    this.messages = messages;
+    this.casecode = new ArrayList<>();
+    this.casecode.add(c);
+    backoffc = BackoffCase.BO;
   }
 
   public TransactionPrepareFailedException(
@@ -52,14 +76,17 @@ public class TransactionPrepareFailedException extends FabricException {
 
   public TransactionPrepareFailedException(
       OidKeyHashMap<SerializedObject> versionConflicts, List<String> messages,
-      BackoffCase b) {
+      CaseCode c, BackoffCase b) {
     this.versionConflicts = versionConflicts;
     this.messages = messages;
     backoffc = b;
+    this.casecode = new ArrayList<>();
+    this.casecode.add(c);
   }
 
   public TransactionPrepareFailedException(
       Map<RemoteNode<?>, TransactionPrepareFailedException> failures) {
+    this.casecode = new ArrayList<>();
     this.versionConflicts = new OidKeyHashMap<>();
     this.backoffc = BackoffCase.Pause;
 
@@ -76,6 +103,7 @@ public class TransactionPrepareFailedException extends FabricException {
       if (this.backoffc.weakerThan(exn.backoffc)) {
         this.backoffc = exn.backoffc;
       }
+      this.casecode.addAll(exn.casecode);
     }
   }
 
@@ -83,6 +111,7 @@ public class TransactionPrepareFailedException extends FabricException {
       List<TransactionPrepareFailedException> causes) {
     this.versionConflicts = new OidKeyHashMap<>();
     this.backoffc = BackoffCase.Pause;
+    this.casecode = new ArrayList<>();
 
     messages = new ArrayList<>();
     for (TransactionPrepareFailedException exc : causes) {
@@ -96,11 +125,22 @@ public class TransactionPrepareFailedException extends FabricException {
           this.backoffc = exc.backoffc;
         }
       }
+      this.casecode.addAll(exc.casecode);
     }
   }
 
   public TransactionPrepareFailedException(
+      OidKeyHashMap<SerializedObject> versionConflicts, String message,
+      CaseCode c) {
+    this.casecode = new ArrayList<>();
+    this.casecode.add(c);
+    this.versionConflicts = versionConflicts;
+    messages = java.util.Collections.singletonList(message);
+  }
+
+  public TransactionPrepareFailedException(
       OidKeyHashMap<SerializedObject> versionConflicts, String message) {
+    this.casecode = new ArrayList<>();
     this.versionConflicts = versionConflicts;
     messages = java.util.Collections.singletonList(message);
     backoffc = BackoffCase.BO;
@@ -108,18 +148,25 @@ public class TransactionPrepareFailedException extends FabricException {
 
   public TransactionPrepareFailedException(
       OidKeyHashMap<SerializedObject> versionConflicts, String message,
-      BackoffCase b) {
+      CaseCode c, BackoffCase b) {
     this.versionConflicts = versionConflicts;
     messages = java.util.Collections.singletonList(message);
     backoffc = b;
+    this.casecode = new ArrayList<>();
+    this.casecode.add(c);
+  }
+
+  public TransactionPrepareFailedException(String message, CaseCode c) {
+    this(new OidKeyHashMap<SerializedObject>(), message, c);
   }
 
   public TransactionPrepareFailedException(String message) {
     this(new OidKeyHashMap<SerializedObject>(), message);
   }
 
-  public TransactionPrepareFailedException(String message, BackoffCase b) {
-    this(new OidKeyHashMap<SerializedObject>(), message, b);
+  public TransactionPrepareFailedException(String message, CaseCode c,
+      BackoffCase b) {
+    this(new OidKeyHashMap<SerializedObject>(), message, c, b);
   }
 
   @Override

@@ -2,9 +2,12 @@ package fabric.worker.transaction;
 
 import static fabric.common.Logging.WORKER_TRANSACTION_LOGGER;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
@@ -13,6 +16,7 @@ import fabric.common.Logging;
 import fabric.common.SerializedObject;
 import fabric.common.SysUtil;
 import fabric.common.util.BackoffWrapper.BackoffCase;
+import fabric.common.util.CaseCode;
 import fabric.common.util.LongKeyMap;
 import fabric.common.util.OidKeyHashMap;
 import fabric.lang.Object._Impl;
@@ -124,12 +128,10 @@ public class TransactionPrepare {
         "{0} failed to prepare at {1}: {2}", new Object[] { txnLog, s, m });
     outstandingStores.remove(s);
     respondedStores.add(s);
-    String code = "";
-    for (String message : m.messages) {
-      code = code + message.split(" ")[0] + " ";
-    }
-    code = code.trim();
-    abort(s, m.backoffc, code);
+
+    List<CaseCode> c = m.casecode;
+    abort(s, m.backoffc, c);
+
     if (s instanceof RemoteStore) {
       // Remove old objects from our cache.
       RemoteStore store = (RemoteStore) s;
@@ -201,12 +203,10 @@ public class TransactionPrepare {
         "{0} failed to prepare at {1}: {2}", new Object[] { txnLog, w, m });
     outstandingWorkers.remove(w);
     respondedWorkers.add(w);
-    String code = "";
-    for (String message : m.messages) {
-      code = code + message.split(" ")[0] + " ";
-    }
-    code = code.trim();
-    abort(w, m.backoffc, code);
+
+    List<CaseCode> c = m.casecode;
+    abort(w, m.backoffc, c);
+
     // TODO: handle conflicts?
     cleanUp();
   }
@@ -318,7 +318,9 @@ public class TransactionPrepare {
         && currentStatus != Status.COMMITTED) {
       WORKER_TRANSACTION_LOGGER.log(Level.FINE,
           "{0} aborted during prepare by external actor", txnLog);
-      runAbort(BackoffCase.BOnon, "ex");
+
+      runAbort(BackoffCase.BOnon,
+          new ArrayList<>(Arrays.asList(CaseCode.Coord)));
     }
     if (currentStatus == Status.ABORTING) cleanUp();
   }
@@ -327,13 +329,14 @@ public class TransactionPrepare {
    * Initiate an abort due to the RemoteWorker cause indicating a problem.
    * @param cause the failed worker that initiated the abort.
    */
+
   private synchronized void abort(RemoteWorker cause, BackoffCase backoffc,
-      String code) {
+      List<CaseCode> c) {
     if (currentStatus != Status.ABORTING && currentStatus != Status.COMMITTING
         && currentStatus != Status.COMMITTED) {
       WORKER_TRANSACTION_LOGGER.log(Level.FINE,
           "{0} aborted during prepare by {1}", new Object[] { txnLog, cause });
-      runAbort(backoffc, code);
+      runAbort(backoffc, c);
     }
   }
 
@@ -341,20 +344,23 @@ public class TransactionPrepare {
    * Initiate an abort due to the store cause indicating a problem.
    * @param cause the failed store that initiated the abort.
    */
+
   private synchronized void abort(Store cause, BackoffCase backoffc,
-      String code) {
+      List<CaseCode> c) {
     if (currentStatus != Status.ABORTING && currentStatus != Status.COMMITTING
         && currentStatus != Status.COMMITTED) {
       WORKER_TRANSACTION_LOGGER.log(Level.FINE,
           "{0} aborted during prepare by {1}", new Object[] { txnLog, cause });
-      runAbort(backoffc, code);
+      runAbort(backoffc, c);
     }
   }
 
   /**
    * Actually perform abort round, updating state and sending messages.
    */
-  private synchronized void runAbort(BackoffCase backoffc, String code) {
+
+  private synchronized void runAbort(BackoffCase backoffc, List<CaseCode> c) {
+
     currentStatus = Status.ABORTING;
 
     // Clear out nodes that we didn't contact and shouldn't contact.
@@ -385,7 +391,8 @@ public class TransactionPrepare {
     }
 
     // Flag that local locks should be released.
-    txnLog.flagRetry(code + " failure during prepare phase", backoffc);
+
+    txnLog.flagRetry("failure during prepare phase", backoffc, c);
     txnLog.prepare = null;
   }
 
