@@ -576,7 +576,7 @@ public abstract class ObjectDB {
       // Make sure the onum doesn't already exist in the database.
       if (exists(onum)) {
         throw new TransactionPrepareFailedException(versionConflicts,
-            "Object " + onum + " already exists.", CaseCode.RAborted);
+            "Object " + onum + " already exists.", CaseCode.RObExist);
       }
 
       // Set the object's initial version number.
