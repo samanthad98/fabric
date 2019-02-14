@@ -21,6 +21,7 @@ public class TxnStats {
   private List<String> msgs = new ArrayList<>();
   private List<String> fetched = new ArrayList<>();
   private List<String> versionConflicts = new ArrayList<>();
+  private List casecode = new ArrayList();
 
   public TxnStats() {
   }
@@ -37,6 +38,7 @@ public class TxnStats {
     msgs.clear();
     fetched.clear();
     versionConflicts.clear();
+    casecode = new ArrayList();
   }
 
   /**
@@ -158,6 +160,21 @@ public class TxnStats {
    */
   public void addBackoffIncrease() {
     backoffincrease = backoffincrease + 1;
+  }
+
+  /**
+   * Add casecode.
+   */
+  public void addRetrycase(List c) {
+    this.casecode.addAll(c);
+  }
+
+  public String casestring() {
+    String casestring = "Retryed because ";
+    for (Object o : casecode) {
+      casestring += o.toString() + ",";
+    }
+    return casestring;
   }
 
   @Override
