@@ -322,7 +322,7 @@ public final class PrepareRequest {
         if (failures.isEmpty()) {
           fail.messages.add("server side version conflict");
           fail.casecode.add(CaseCode.RemoteVC);
-          fail.backoffc = BackoffCase.Pause;
+          fail.backoffc = BackoffCase.BOnon;
         }
         throw fail;
       }
