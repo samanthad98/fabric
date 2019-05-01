@@ -17,6 +17,7 @@ public class TransactionPrepareFailedException extends FabricException {
 
   /**
    * A set of objects used by the transaction and were not seen by the store.
+   * Unempty if and only if the txn prepare do not have out of date objects and no other failures.
    */
   public final OidKeyHashMap<SerializedObject> unseenObjects;
 

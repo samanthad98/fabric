@@ -242,7 +242,11 @@ class Store extends MessageToStoreHandler {
       }
       client.node.notifyStorePrepareSuccess(msg.tid);
     } catch (TransactionPrepareFailedException e) {
-      client.node.notifyStorePrepareFailed(msg.tid, e);
+      if (e.unseenObjects.isEmpty()){
+        client.node.notifyStorePrepareFailed(msg.tid, e);
+      } else {
+        //TODO : Add txn to the buffer
+      }
     } catch (TransactionCommitFailedException e) {
       // Shouldn't happen.
       throw new InternalError("Single-store commit failed unexpectedly.", e);

@@ -487,7 +487,8 @@ public abstract class ObjectDB {
    *          to this map, binding the object's onum to its current version.
    */
   public final void prepareRead(long tid, Principal worker, long onum,
-      int version, OidKeyHashMap<SerializedObject> versionConflicts)
+      int version, OidKeyHashMap<SerializedObject> versionConflicts,
+      OidKeyHashMap<SerializedObject> unseenObjects)
       throws TransactionPrepareFailedException {
     OidKeyHashMap<PendingTransaction> submap = pendingByTid.get(tid);
     if (submap == null) {
@@ -517,9 +518,12 @@ public abstract class ObjectDB {
           e.getMessage());
     }
 
-    if (curVersion != version) {
+    if (curVersion > version) {
       versionConflicts.put(Worker.getWorker().getStore(getName()), onum,
           read(onum));
+    } else if (curVersion < version) {
+      unseenObjects.put(Worker.getWorker().getStore(getName()), onum,
+              read(onum));
     }
   }
 
@@ -540,6 +544,7 @@ public abstract class ObjectDB {
    */
   public final void prepareUpdate(long tid, Principal worker,
       SerializedObject obj, OidKeyHashMap<SerializedObject> versionConflicts,
+      OidKeyHashMap<SerializedObject> unseenObjects,
       UpdateMode mode) throws TransactionPrepareFailedException {
     OidKeyHashMap<PendingTransaction> submap = pendingByTid.get(tid);
     if (submap == null) {
@@ -582,9 +587,12 @@ public abstract class ObjectDB {
       // Check version numbers.
       int storeVersion = storeCopy.getVersion();
       int workerVersion = obj.getVersion();
-      if (storeVersion != workerVersion) {
+      if (storeVersion > workerVersion) {
         versionConflicts.put(Worker.getWorker().getStore(getName()), onum,
             storeCopy);
+        return;
+      } else if (storeVersion < workerVersion) {
+        unseenObjects.put(Worker.getWorker().getStore(getName()), onum, storeCopy);
         return;
       }
 

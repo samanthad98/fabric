@@ -21,6 +21,7 @@ import fabric.store.db.ObjectDB;
 import fabric.worker.RemoteStore;
 import fabric.worker.TransactionPrepareFailedException;
 import fabric.worker.Worker;
+import fabric.worker.transaction.TransactionPrepare;
 
 /**
  * A convenience class for grouping together the created, modified, and read
@@ -68,10 +69,11 @@ public final class PrepareRequest {
      */
     public void prepareOrCheck(ObjectDB database, Principal worker,
         OidKeyHashMap<SerializedObject> versionConflicts,
-        List<TransactionPrepareFailedException> failures, long tid) {
+        List<TransactionPrepareFailedException> failures,
+        OidKeyHashMap<SerializedObject> unseenObjects, long tid) {
       if (versionConflicts.isEmpty() && failures.isEmpty()) {
         try {
-          prepare(database, worker, versionConflicts);
+          prepare(database, worker, versionConflicts, unseenObjects);
           // As soon as things have gone wrong, abort and release the locks.
           if (!versionConflicts.isEmpty()) database.abortPrepare(tid, worker);
         } catch (TransactionPrepareFailedException e) {
@@ -107,7 +109,8 @@ public final class PrepareRequest {
      *          has a version conflict.
      */
     public abstract void prepare(ObjectDB database, Principal worker,
-        OidKeyHashMap<SerializedObject> versionConflicts)
+        OidKeyHashMap<SerializedObject> versionConflicts,
+        OidKeyHashMap<SerializedObject> unseenObjects)
         throws TransactionPrepareFailedException;
 
     /**
@@ -154,9 +157,10 @@ public final class PrepareRequest {
 
     @Override
     public void prepare(ObjectDB database, Principal worker,
-        OidKeyHashMap<SerializedObject> versionConflicts)
+        OidKeyHashMap<SerializedObject> versionConflicts,
+        OidKeyHashMap<SerializedObject> unseenObjects)
         throws TransactionPrepareFailedException {
-      database.prepareRead(tid, worker, onum, version, versionConflicts);
+      database.prepareRead(tid, worker, onum, version, versionConflicts, unseenObjects);
     }
 
     @Override
@@ -187,9 +191,10 @@ public final class PrepareRequest {
 
     @Override
     public void prepare(ObjectDB database, Principal worker,
-        OidKeyHashMap<SerializedObject> versionConflicts)
+        OidKeyHashMap<SerializedObject> versionConflicts,
+        OidKeyHashMap<SerializedObject> unseenObjects)
         throws TransactionPrepareFailedException {
-      database.prepareUpdate(tid, worker, val, versionConflicts, WRITE);
+      database.prepareUpdate(tid, worker, val, versionConflicts, unseenObjects, WRITE);
     }
 
     @Override
@@ -220,9 +225,10 @@ public final class PrepareRequest {
 
     @Override
     public void prepare(ObjectDB database, Principal worker,
-        OidKeyHashMap<SerializedObject> versionConflicts)
+        OidKeyHashMap<SerializedObject> versionConflicts,
+        OidKeyHashMap<SerializedObject> unseenObjects)
         throws TransactionPrepareFailedException {
-      database.prepareUpdate(tid, worker, val, versionConflicts, CREATE);
+      database.prepareUpdate(tid, worker, val, versionConflicts, unseenObjects, CREATE);
     }
 
     @Override
@@ -292,6 +298,7 @@ public final class PrepareRequest {
     try {
       // This will store the set of onums of objects that were out of date.
       OidKeyHashMap<SerializedObject> versionConflicts = new OidKeyHashMap<>();
+      OidKeyHashMap<SerializedObject> unseenObjects = new OidKeyHashMap<>();
       List<TransactionPrepareFailedException> failures = new ArrayList<>();
 
       // Sort the objects being prepared.
@@ -308,13 +315,17 @@ public final class PrepareRequest {
 
       // Run it.
       for (ItemPrepare p : prepares) {
-        p.prepareOrCheck(database, worker, versionConflicts, failures, tid);
+        p.prepareOrCheck(database, worker, versionConflicts, failures, unseenObjects, tid);
       }
 
       if (!versionConflicts.isEmpty() || !failures.isEmpty()) {
         TransactionPrepareFailedException fail =
             new TransactionPrepareFailedException(failures);
         fail.versionConflicts.putAll(versionConflicts);
+        throw fail;
+      } else if (!unseenObjects.isEmpty()) {
+        TransactionPrepareFailedException fail =
+            new TransactionPrepareFailedException(versionConflicts, unseenObjects);
         throw fail;
       }
 
