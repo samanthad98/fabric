@@ -15,29 +15,56 @@ public class TransactionPrepareFailedException extends FabricException {
    */
   public final OidKeyHashMap<SerializedObject> versionConflicts;
 
+  /**
+   * A set of objects used by the transaction and were not seen by the store.
+   */
+  public final OidKeyHashMap<SerializedObject> unseenObjects;
+
   public final List<String> messages;
 
   public TransactionPrepareFailedException(
       TransactionRestartingException cause) {
     this.messages = new ArrayList<>();
     this.versionConflicts = new OidKeyHashMap<>();
+    this.unseenObjects = new OidKeyHashMap<>();
   }
 
   public TransactionPrepareFailedException(
       OidKeyHashMap<SerializedObject> versionConflicts) {
     this.versionConflicts = versionConflicts;
     this.messages = new ArrayList<>();
+    this.unseenObjects = new OidKeyHashMap<>();
+  }
+
+  public TransactionPrepareFailedException(
+          OidKeyHashMap<SerializedObject> versionConflicts,
+          OidKeyHashMap<SerializedObject> unseenObjects) {
+    this.versionConflicts = versionConflicts;
+    this.messages = new ArrayList<>();
+    this.unseenObjects = unseenObjects;
   }
 
   public TransactionPrepareFailedException(
       OidKeyHashMap<SerializedObject> versionConflicts, List<String> messages) {
     this.versionConflicts = versionConflicts;
     this.messages = messages;
+    this.unseenObjects = new OidKeyHashMap<>();
   }
+
+  public TransactionPrepareFailedException(
+          OidKeyHashMap<SerializedObject> versionConflicts,
+          List<String> messages,
+          OidKeyHashMap<SerializedObject> unseenObjects) {
+    this.versionConflicts = versionConflicts;
+    this.messages = messages;
+    this.unseenObjects = unseenObjects;
+  }
+
 
   public TransactionPrepareFailedException(
       Map<RemoteNode<?>, TransactionPrepareFailedException> failures) {
     this.versionConflicts = new OidKeyHashMap<>();
+    this.unseenObjects = new OidKeyHashMap<>();
 
     messages = new ArrayList<>();
     for (Map.Entry<RemoteNode<?>, TransactionPrepareFailedException> entry : failures
@@ -54,6 +81,7 @@ public class TransactionPrepareFailedException extends FabricException {
   public TransactionPrepareFailedException(
       List<TransactionPrepareFailedException> causes) {
     this.versionConflicts = new OidKeyHashMap<>();
+    this.unseenObjects = new OidKeyHashMap<>();
 
     messages = new ArrayList<>();
     for (TransactionPrepareFailedException exc : causes) {
@@ -68,6 +96,7 @@ public class TransactionPrepareFailedException extends FabricException {
       OidKeyHashMap<SerializedObject> versionConflicts, String message) {
     this.versionConflicts = versionConflicts;
     messages = java.util.Collections.singletonList(message);
+    this.unseenObjects = new OidKeyHashMap<>();
   }
 
   public TransactionPrepareFailedException(String message) {
