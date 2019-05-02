@@ -621,6 +621,7 @@ public abstract class ObjectDB {
       OidKeyHashMap<PendingTransaction> submap = getOrCreatePendingMap(tid);
       PendingTransaction stillPending;
       synchronized (submap) {
+        this.buffer.delete(tid);
         // Try again.
         if (pendingByTid.get(tid) != submap) continue;
         stillPending = submap.get(worker);
