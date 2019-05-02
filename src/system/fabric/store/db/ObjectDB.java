@@ -438,8 +438,7 @@ public abstract class ObjectDB {
     this.pendingByTid = new ConcurrentLongKeyHashMap<>();
     this.rwLocks = new ObjectLocksTable();
     this.objectGrouper = new ObjectGrouper(this, privateKey);
-    this.buffer = new OptimizedNumLinkBuffer();
-    buffer.setDatabase(this);
+    this.buffer = new OptimizedNumLinkBuffer(this);
   }
 
   /**

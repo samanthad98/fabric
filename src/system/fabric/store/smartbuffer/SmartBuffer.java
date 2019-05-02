@@ -60,15 +60,5 @@ public interface SmartBuffer {
      */
     void delete(long tid);
 
-    /**
-     * Set the corresponding store for this buffer. Note that this method
-     * <b>must</b> be called before {@link SmartBuffer#add(long, Set)},
-     * {@link SmartBuffer#remove(ObjectVN)}, {@link SmartBuffer#eject(ObjectVN)}
-     * and {@link SmartBuffer#delete(long)}.
-     *
-     * @param store The store to assign.
-     */
-    void setDatabase(ObjectDB database);
-
     int numLink();
 }

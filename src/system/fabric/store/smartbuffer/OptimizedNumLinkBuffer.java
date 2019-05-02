@@ -65,21 +65,21 @@ public class OptimizedNumLinkBuffer implements SmartBuffer {
     /*
      * A pointer to the store that the buffer is associated with.
      */
-    public ObjectDB database;
+    private ObjectDB database;
 
     private int num_abort_lock;
     private int num_abort_vc;
     private int num_resolve;
 
 
-    public OptimizedNumLinkBuffer() {
+    public OptimizedNumLinkBuffer(ObjectDB database) {
         depsMap = new ConcurrentHashMap<>();
         unresolveddepsMap = new ConcurrentHashMap<>();
         numLink = new LongKeyHashMap<>();
         objlocktable = new ConcurrentLongKeyHashMap<>();
         txnlocktable = new ConcurrentLongKeyHashMap<>();
-        clientMap = new ConcurrentLongKeyHashMap<>();
-        PendingTxn = new ConcurrentLongKeyHashMap<>();
+        futures = new ConcurrentLongKeyHashMap<>();
+        this.database = database;
 
         num_abort_lock = 0;
         num_abort_vc = 0;
@@ -221,11 +221,6 @@ public class OptimizedNumLinkBuffer implements SmartBuffer {
             numLink.remove(tid);
             futures.remove(tid);
         }
-    }
-
-    @Override
-    public void setDatabase(ObjectDB database) {
-        this.database = database;
     }
 
     @Override
