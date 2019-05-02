@@ -14,6 +14,7 @@ import java.util.logging.Level;
 import fabric.common.ONumConstants;
 import fabric.common.SerializedObject;
 import fabric.common.exceptions.AccessException;
+import fabric.common.util.LongKeyHashMap;
 import fabric.common.util.LongKeyMap;
 import fabric.common.util.OidKeyHashMap;
 import fabric.lang.security.Principal;
@@ -70,12 +71,14 @@ public final class PrepareRequest {
     public void prepareOrCheck(ObjectDB database, Principal worker,
         OidKeyHashMap<SerializedObject> versionConflicts,
         List<TransactionPrepareFailedException> failures,
-        OidKeyHashMap<SerializedObject> unseenObjects, long tid) {
-      if (versionConflicts.isEmpty() && failures.isEmpty()) {
+        LongKeyMap<Integer> unseenObjects, long tid) {
+      if (versionConflicts.isEmpty() && failures.isEmpty() && unseenObjects.isEmpty()) {
         try {
           prepare(database, worker, versionConflicts, unseenObjects);
           // As soon as things have gone wrong, abort and release the locks.
           if (!versionConflicts.isEmpty()) database.abortPrepare(tid, worker);
+          // If any unseenobjects occur, release the locks
+          if (!unseenObjects.isEmpty()) database.releaseLock(tid, worker);
         } catch (TransactionPrepareFailedException e) {
           // As soon as things have gone wrong, abort and release the locks.
           database.abortPrepare(tid, worker);
@@ -83,13 +86,28 @@ public final class PrepareRequest {
         }
       }
       RemoteStore thisStore = Worker.getWorker().getStore(database.getName());
-      if ((!versionConflicts.isEmpty() || !failures.isEmpty())
+      // If no version conflict or failure, continue to check unseenObjects and don't abort the txn
+      if (versionConflicts.isEmpty() && failures.isEmpty() && !unseenObjects.isEmpty() &&
+              !unseenObjects.containsKey(getOnum())) {
+        SerializedObject value = database.read(getOnum());
+        if (value != null) {
+          if (value.getVersion() > getVersion()) {
+            versionConflicts.put(thisStore, getOnum(), value);
+            database.abortPrepare(tid, worker);
+          } else if (value.getVersion() < getVersion()) {
+            unseenObjects.put(getOnum(), getVersion());
+          }
+        } else {
+          // If the object has not been created in the store
+          unseenObjects.put(getOnum(), getVersion());
+        }
+      } else if ((!versionConflicts.isEmpty() || !failures.isEmpty())
           && !versionConflicts.containsKey(thisStore, getOnum())) {
-        // We're already doomed, so don't lock things, just check for more
+        // We're already doomed, don't lock things, just check for more
         // conflicts and contracts
         SerializedObject value = database.read(getOnum());
         if (value != null) {
-          if (value.getVersion() != getVersion()) {
+          if (value.getVersion() > getVersion()) {
             versionConflicts.put(thisStore, getOnum(), value);
           }
         }
@@ -110,7 +128,7 @@ public final class PrepareRequest {
      */
     public abstract void prepare(ObjectDB database, Principal worker,
         OidKeyHashMap<SerializedObject> versionConflicts,
-        OidKeyHashMap<SerializedObject> unseenObjects)
+        LongKeyMap<Integer> unseenObjects)
         throws TransactionPrepareFailedException;
 
     /**
@@ -158,7 +176,7 @@ public final class PrepareRequest {
     @Override
     public void prepare(ObjectDB database, Principal worker,
         OidKeyHashMap<SerializedObject> versionConflicts,
-        OidKeyHashMap<SerializedObject> unseenObjects)
+        LongKeyMap<Integer> unseenObjects)
         throws TransactionPrepareFailedException {
       database.prepareRead(tid, worker, onum, version, versionConflicts, unseenObjects);
     }
@@ -192,7 +210,7 @@ public final class PrepareRequest {
     @Override
     public void prepare(ObjectDB database, Principal worker,
         OidKeyHashMap<SerializedObject> versionConflicts,
-        OidKeyHashMap<SerializedObject> unseenObjects)
+        LongKeyMap<Integer> unseenObjects)
         throws TransactionPrepareFailedException {
       database.prepareUpdate(tid, worker, val, versionConflicts, unseenObjects, WRITE);
     }
@@ -226,7 +244,7 @@ public final class PrepareRequest {
     @Override
     public void prepare(ObjectDB database, Principal worker,
         OidKeyHashMap<SerializedObject> versionConflicts,
-        OidKeyHashMap<SerializedObject> unseenObjects)
+        LongKeyMap<Integer> unseenObjects)
         throws TransactionPrepareFailedException {
       database.prepareUpdate(tid, worker, val, versionConflicts, unseenObjects, CREATE);
     }
@@ -298,7 +316,7 @@ public final class PrepareRequest {
     try {
       // This will store the set of onums of objects that were out of date.
       OidKeyHashMap<SerializedObject> versionConflicts = new OidKeyHashMap<>();
-      OidKeyHashMap<SerializedObject> unseenObjects = new OidKeyHashMap<>();
+      LongKeyMap<Integer> unseenObjects = new LongKeyHashMap<>();
       List<TransactionPrepareFailedException> failures = new ArrayList<>();
 
       // Sort the objects being prepared.
@@ -325,7 +343,7 @@ public final class PrepareRequest {
         throw fail;
       } else if (!unseenObjects.isEmpty()) {
         TransactionPrepareFailedException fail =
-            new TransactionPrepareFailedException(versionConflicts, unseenObjects);
+            new TransactionPrepareFailedException(unseenObjects);
         throw fail;
       }
 

@@ -22,6 +22,7 @@ import fabric.common.util.ConcurrentLongKeyMap;
 import fabric.common.util.LongHashSet;
 import fabric.common.util.LongIterator;
 import fabric.common.util.LongSet;
+import fabric.common.util.LongKeyMap;
 import fabric.common.util.OidKeyHashMap;
 import fabric.lang.security.NodePrincipal;
 import fabric.lang.security.Principal;
@@ -488,7 +489,7 @@ public abstract class ObjectDB {
    */
   public final void prepareRead(long tid, Principal worker, long onum,
       int version, OidKeyHashMap<SerializedObject> versionConflicts,
-      OidKeyHashMap<SerializedObject> unseenObjects)
+      LongKeyMap<Integer> unseenObjects)
       throws TransactionPrepareFailedException {
     OidKeyHashMap<PendingTransaction> submap = pendingByTid.get(tid);
     if (submap == null) {
@@ -522,8 +523,7 @@ public abstract class ObjectDB {
       versionConflicts.put(Worker.getWorker().getStore(getName()), onum,
           read(onum));
     } else if (curVersion < version) {
-      unseenObjects.put(Worker.getWorker().getStore(getName()), onum,
-              read(onum));
+      unseenObjects.put(onum, version);
     }
   }
 
@@ -544,7 +544,7 @@ public abstract class ObjectDB {
    */
   public final void prepareUpdate(long tid, Principal worker,
       SerializedObject obj, OidKeyHashMap<SerializedObject> versionConflicts,
-      OidKeyHashMap<SerializedObject> unseenObjects,
+      LongKeyMap<Integer> unseenObjects,
       UpdateMode mode) throws TransactionPrepareFailedException {
     OidKeyHashMap<PendingTransaction> submap = pendingByTid.get(tid);
     if (submap == null) {
@@ -592,7 +592,7 @@ public abstract class ObjectDB {
             storeCopy);
         return;
       } else if (storeVersion < workerVersion) {
-        unseenObjects.put(Worker.getWorker().getStore(getName()), onum, storeCopy);
+        unseenObjects.put(onum, workerVersion);
         return;
       }
 
@@ -639,6 +639,34 @@ public abstract class ObjectDB {
                   "Rollback of a pending transaction failed", e);
             }
             break;
+          }
+        }
+      }
+      stillPending.wakeForAbort();
+      return;
+    }
+  }
+
+  public final void releaseLock(long tid, Principal worker) {
+    while (true) {
+      OidKeyHashMap<PendingTransaction> submap = getOrCreatePendingMap(tid);
+      PendingTransaction stillPending;
+      synchronized (submap) {
+        // Try again.
+        if (pendingByTid.get(tid) != submap) continue;
+        stillPending = submap.get(worker);
+        if (stillPending == null) {
+          stillPending = new PendingTransaction(tid, worker);
+          submap.put(worker, stillPending);
+        }
+        synchronized (stillPending) {
+          for (long onum : stillPending.reads) {
+            this.rwLocks.releaseReadLock(onum, stillPending);
+          }
+
+          for (SerializedObject update : SysUtil.chain(stillPending.creates, stillPending.writes)) {
+            long onum = update.getOnum();
+            this.rwLocks.releaseWriteLock(onum, stillPending);
           }
         }
       }

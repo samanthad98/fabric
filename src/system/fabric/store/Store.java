@@ -244,8 +244,6 @@ class Store extends MessageToStoreHandler {
     } catch (TransactionPrepareFailedException e) {
       if (e.unseenObjects.isEmpty()){
         client.node.notifyStorePrepareFailed(msg.tid, e);
-      } else {
-        //TODO : Add txn to the buffer
       }
     } catch (TransactionCommitFailedException e) {
       // Shouldn't happen.
