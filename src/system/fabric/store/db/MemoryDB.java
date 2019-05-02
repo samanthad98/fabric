@@ -135,9 +135,11 @@ public class MemoryDB extends ObjectDB {
     // dangling references in update objects.
     for (SerializedObject o : tx.getCreates()) {
       objectTable.put(o.getOnum(), o);
+      buffer.remove(o);
     }
     for (SerializedObject o : tx.getWrites()) {
       objectTable.put(o.getOnum(), o);
+      buffer.remove(o);
 
       // Update the local worker cache if this is a remote worker updating the
       // value.
