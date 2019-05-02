@@ -7,10 +7,11 @@ import fabric.common.SerializedObject;
 import fabric.store.PrepareRequest;
 import fabric.store.PrepareRequest.ItemPrepare;
 import fabric.store.db.ObjectDB;
+import fabric.worker.TransactionPrepareFailedException;
 import fabric.worker.remote.RemoteWorker;
 
 import java.util.Set;
-import java.util.SortedSet;
+import java.util.concurrent.Future;
 
 public interface SmartBuffer {
     /**
@@ -28,12 +29,11 @@ public interface SmartBuffer {
      *
      *
      * @param tid The ID of the transaction.
-     * @param client The principal associated with this the transaction
-     * @param req The PrepareRequest
+     * @param reads The PrepareRequest
      * @return A {@code Future} that resolves in accord with the transaction
      *             dependency status.
      */
-    void add(long tid, RemoteIdentity<RemoteWorker> client, PrepareRequest req);
+    Future<TransactionPrepareFailedException> add(long tid, LongKeyMap<Integer> reads);
 
     /**
      * Remove a dependency from the dependencies of any transactions that rely

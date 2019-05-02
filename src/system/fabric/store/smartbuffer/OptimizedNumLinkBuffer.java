@@ -14,7 +14,9 @@ import fabric.worker.Worker;
 import fabric.worker.remote.RemoteWorker;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Future;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -56,6 +58,11 @@ public class OptimizedNumLinkBuffer implements SmartBuffer {
     private ConcurrentLongKeyHashMap<PrepareRequest> PendingTxn;
 
     /*
+     *
+     */
+    private ConcurrentLongKeyHashMap<CompletableFuture<TransactionPrepareFailedException>> futures;
+
+    /*
      * A pointer to the store that the buffer is associated with.
      */
     public ObjectDB database;
@@ -72,6 +79,7 @@ public class OptimizedNumLinkBuffer implements SmartBuffer {
         objlocktable = new ConcurrentLongKeyHashMap<>();
         txnlocktable = new ConcurrentLongKeyHashMap<>();
         clientMap = new ConcurrentLongKeyHashMap<>();
+        PendingTxn = new ConcurrentLongKeyHashMap<>();
 
         num_abort_lock = 0;
         num_abort_vc = 0;
@@ -90,15 +98,16 @@ public class OptimizedNumLinkBuffer implements SmartBuffer {
     }
 
     @Override
-    public void add(long tid, RemoteIdentity<RemoteWorker> client, PrepareRequest req) {
+    public Future<TransactionPrepareFailedException> add(long tid, LongKeyMap<Integer> reads) {
+        CompletableFuture<TransactionPrepareFailedException> future = new CompletableFuture<>();
         synchronized (getTxnLock(tid)) {
             numLink.put(tid, 0);
-            clientMap.put(tid, client);
-            PendingTxn.put(tid, req);
+            futures.put(tid, future);
         }
 
         OidKeyHashMap<SerializedObject> versionConflicts = new OidKeyHashMap<>();
-        for (LongKeyMap.Entry<Integer> object : req.reads.entrySet()) {
+
+        for (LongKeyMap.Entry<Integer> object : reads.entrySet()) {
             long onum = object.getKey();
             int version = object.getValue();
 
@@ -135,25 +144,22 @@ public class OptimizedNumLinkBuffer implements SmartBuffer {
         if (!versionConflicts.isEmpty()) {
             synchronized (getTxnLock(tid)) {
                 numLink.remove(tid);
-                clientMap.remove(tid);
-                PendingTxn.remove(tid);
+                futures.remove(tid);
             }
-            TransactionPrepareFailedException e = new TransactionPrepareFailedException(versionConflicts);
-            client.node.notifyStorePrepareFailed(tid, e);
-            return;
+            future.complete(new TransactionPrepareFailedException(versionConflicts));
+            return future;
         }
 
         synchronized (getTxnLock(tid)) {
             if (numLink.containsKey(tid)) {
                 if (numLink.get(tid) == 0) {
                     numLink.remove(tid);
-                    clientMap.remove(tid);
-                    PendingTxn.remove(tid);
-                    // TODO : grab lock in the database (Aborting state concurrency issue)
-
+                    futures.remove(tid);
+                    future.complete(new TransactionPrepareFailedException(true));
                 }
             }
         }
+        return future;
     }
 
     @Override
@@ -171,10 +177,8 @@ public class OptimizedNumLinkBuffer implements SmartBuffer {
                             numLink.put(tid, numLink.get(tid) - 1);
                             if (numLink.get(tid) == 0) {
                                 numLink.remove(tid);
-                                clientMap.remove(tid);
-                                PendingTxn.remove(tid);
-                                // TODO : grab lock in the database
-
+                                futures.get(tid).complete(new TransactionPrepareFailedException(true));
+                                futures.remove(tid);
                             }
                         }
                     }
@@ -194,16 +198,15 @@ public class OptimizedNumLinkBuffer implements SmartBuffer {
                 for (long tid : depsMap.get(to_remove)){
                     synchronized (getTxnLock(tid)) {
                         if (numLink.containsKey(tid)){
-                            RemoteIdentity<RemoteWorker> client = clientMap.get(tid);
-                            numLink.remove(tid);
-                            clientMap.remove(tid);
-                            PendingTxn.remove(tid);
-
                             OidKeyHashMap<SerializedObject> versionConflicts = new OidKeyHashMap<>();
                             versionConflicts.put(Worker.getWorker().getStore(database.getName()), onum, database.read(onum));
                             TransactionPrepareFailedException e = new TransactionPrepareFailedException(versionConflicts);
 
-                            client.node.notifyStorePrepareFailed(tid, e);
+                            CompletableFuture<TransactionPrepareFailedException> future = futures.get(tid);
+                            future.complete(e);
+
+                            numLink.remove(tid);
+                            futures.remove(tid);
                         }
                     }
                 }
@@ -216,8 +219,7 @@ public class OptimizedNumLinkBuffer implements SmartBuffer {
     public void delete(long tid) {
         synchronized (getTxnLock(tid)) {
             numLink.remove(tid);
-            clientMap.remove(tid);
-            PendingTxn.remove(tid);
+            futures.remove(tid);
         }
     }
 

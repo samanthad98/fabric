@@ -9,6 +9,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.concurrent.Future;
 import java.util.logging.Level;
 
 import fabric.common.ONumConstants;
@@ -344,6 +345,8 @@ public final class PrepareRequest {
       } else if (!unseenObjects.isEmpty()) {
         TransactionPrepareFailedException fail =
             new TransactionPrepareFailedException(unseenObjects);
+        Future<TransactionPrepareFailedException> future = database.buffer.add(tid, this.reads);
+        fail.setFuture(future);
         throw fail;
       }
 

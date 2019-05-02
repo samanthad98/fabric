@@ -3,6 +3,7 @@ package fabric.worker;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Future;
 
 import fabric.common.SerializedObject;
 import fabric.common.exceptions.FabricException;
@@ -10,6 +11,8 @@ import fabric.common.util.LongKeyMap;
 import fabric.common.util.LongKeyHashMap;
 import fabric.common.util.OidKeyHashMap;
 import fabric.net.RemoteNode;
+import fabric.parse.Array;
+import fabric.worker.transaction.TransactionPrepare;
 
 public class TransactionPrepareFailedException extends FabricException {
   /**
@@ -25,11 +28,16 @@ public class TransactionPrepareFailedException extends FabricException {
 
   public final List<String> messages;
 
+  public final boolean dummyexp;
+
+  public Future<TransactionPrepareFailedException> future;
+
   public TransactionPrepareFailedException(
       TransactionRestartingException cause) {
     this.messages = new ArrayList<>();
     this.versionConflicts = new OidKeyHashMap<>();
     this.unseenObjects = new LongKeyHashMap<>();
+    this.dummyexp = false;
   }
 
   public TransactionPrepareFailedException(
@@ -37,6 +45,7 @@ public class TransactionPrepareFailedException extends FabricException {
     this.versionConflicts = versionConflicts;
     this.messages = new ArrayList<>();
     this.unseenObjects = new LongKeyHashMap<>();
+    this.dummyexp = false;
   }
 
   public TransactionPrepareFailedException(
@@ -44,6 +53,7 @@ public class TransactionPrepareFailedException extends FabricException {
     this.versionConflicts = new OidKeyHashMap<>();
     this.messages = new ArrayList<>();
     this.unseenObjects = unseenObjects;
+    this.dummyexp = false;
   }
 
   public TransactionPrepareFailedException(
@@ -51,6 +61,7 @@ public class TransactionPrepareFailedException extends FabricException {
     this.versionConflicts = versionConflicts;
     this.messages = messages;
     this.unseenObjects = new LongKeyHashMap<>();
+    this.dummyexp = false;
   }
 
   public TransactionPrepareFailedException(
@@ -59,6 +70,7 @@ public class TransactionPrepareFailedException extends FabricException {
     this.versionConflicts = new OidKeyHashMap<>();
     this.messages = messages;
     this.unseenObjects = unseenObjects;
+    this.dummyexp = false;
   }
 
 
@@ -66,6 +78,7 @@ public class TransactionPrepareFailedException extends FabricException {
       Map<RemoteNode<?>, TransactionPrepareFailedException> failures) {
     this.versionConflicts = new OidKeyHashMap<>();
     this.unseenObjects = new LongKeyHashMap<>();
+    this.dummyexp = false;
 
     messages = new ArrayList<>();
     for (Map.Entry<RemoteNode<?>, TransactionPrepareFailedException> entry : failures
@@ -83,6 +96,7 @@ public class TransactionPrepareFailedException extends FabricException {
       List<TransactionPrepareFailedException> causes) {
     this.versionConflicts = new OidKeyHashMap<>();
     this.unseenObjects = new LongKeyHashMap<>();
+    this.dummyexp = false;
 
     messages = new ArrayList<>();
     for (TransactionPrepareFailedException exc : causes) {
@@ -98,10 +112,22 @@ public class TransactionPrepareFailedException extends FabricException {
     this.versionConflicts = versionConflicts;
     messages = java.util.Collections.singletonList(message);
     this.unseenObjects = new LongKeyHashMap<>();
+    this.dummyexp = false;
   }
 
   public TransactionPrepareFailedException(String message) {
     this(new OidKeyHashMap<SerializedObject>(), message);
+  }
+
+  public TransactionPrepareFailedException(boolean dummy) {
+    this.versionConflicts = new OidKeyHashMap<>();
+    this.unseenObjects = new LongKeyHashMap<>();
+    this.dummyexp = dummy;
+    this.messages = new ArrayList<>();
+  }
+
+  public void setFuture(Future<TransactionPrepareFailedException> future){
+    this.future = future;
   }
 
   @Override

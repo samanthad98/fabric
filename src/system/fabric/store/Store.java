@@ -10,6 +10,7 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.cert.X509Certificate;
 import java.util.Collection;
+import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 
 import fabric.common.ConfigProperties;
@@ -55,6 +56,7 @@ import fabric.worker.TransactionPrepareFailedException;
 import fabric.worker.Worker;
 import fabric.worker.Worker.Code;
 import fabric.worker.remote.RemoteWorker;
+import fabric.worker.transaction.TransactionPrepare;
 
 class Store extends MessageToStoreHandler {
   public final Node node;
@@ -244,6 +246,34 @@ class Store extends MessageToStoreHandler {
     } catch (TransactionPrepareFailedException e) {
       if (e.unseenObjects.isEmpty()){
         client.node.notifyStorePrepareFailed(msg.tid, e);
+      } else {
+        try {
+          TransactionPrepareFailedException fail = e.future.get();
+          if (fail.dummyexp) {
+            // Run the prepare process again
+            try {
+              prepareTransaction(client.principal, msg.tid, msg.serializedCreates,
+                      msg.serializedWrites, msg.reads);
+
+              if (msg.singleStore || msg.readOnly) {
+                tm.commitTransaction(client, msg.tid);
+              }
+              client.node.notifyStorePrepareSuccess(msg.tid);
+            } catch (TransactionPrepareFailedException e2) {
+              client.node.notifyStorePrepareFailed(msg.tid, e2);
+            } catch (TransactionCommitFailedException e2) {
+              // Shouldn't happen.
+              throw new InternalError("Single-store commit failed unexpectedly.", e2);
+            }
+
+          } else {
+            client.node.notifyStorePrepareFailed(msg.tid, fail);
+          }
+        } catch (InterruptedException e1) {
+          e1.printStackTrace();
+        } catch (ExecutionException e1) {
+          e1.printStackTrace();
+        }
       }
     } catch (TransactionCommitFailedException e) {
       // Shouldn't happen.

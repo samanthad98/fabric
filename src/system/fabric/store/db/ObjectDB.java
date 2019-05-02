@@ -27,6 +27,8 @@ import fabric.common.util.OidKeyHashMap;
 import fabric.lang.security.NodePrincipal;
 import fabric.lang.security.Principal;
 import fabric.store.SubscriptionManager;
+import fabric.store.smartbuffer.OptimizedNumLinkBuffer;
+import fabric.store.smartbuffer.SmartBuffer;
 import fabric.worker.Store;
 import fabric.worker.TransactionPrepareFailedException;
 import fabric.worker.Worker;
@@ -426,11 +428,18 @@ public abstract class ObjectDB {
    */
   protected final ObjectLocksTable rwLocks;
 
+  /**
+   * Smart buffer associated with the database
+   */
+  public final SmartBuffer buffer;
+
   protected ObjectDB(String name, PrivateKey privateKey) {
     this.name = name;
     this.pendingByTid = new ConcurrentLongKeyHashMap<>();
     this.rwLocks = new ObjectLocksTable();
     this.objectGrouper = new ObjectGrouper(this, privateKey);
+    this.buffer = new OptimizedNumLinkBuffer();
+    buffer.setDatabase(this);
   }
 
   /**
@@ -756,7 +765,7 @@ public abstract class ObjectDB {
    * cache the glob associated with the onum and notifies the subscription
    * manager of the update.
    *
-   * @param onum
+   * @param onums
    *          the onum of the object that was updated.
    * @param worker
    *          the worker that performed the update.
