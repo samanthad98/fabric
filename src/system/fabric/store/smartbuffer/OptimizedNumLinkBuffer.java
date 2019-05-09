@@ -13,6 +13,7 @@ import fabric.worker.TransactionPrepareFailedException;
 import fabric.worker.Worker;
 import fabric.worker.remote.RemoteWorker;
 
+import java.nio.Buffer;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -48,19 +49,9 @@ public class OptimizedNumLinkBuffer implements SmartBuffer {
     private ConcurrentLongKeyHashMap<Lock> txnlocktable;
 
     /*
-     * A map from transactions in the buffer to associated client.
-     */
-    private ConcurrentLongKeyHashMap<RemoteIdentity<RemoteWorker>> clientMap;
-
-    /*
-     * A map from tid to pending
-     */
-    private ConcurrentLongKeyHashMap<PrepareRequest> PendingTxn;
-
-    /*
      *
      */
-    private ConcurrentLongKeyHashMap<CompletableFuture<TransactionPrepareFailedException>> futures;
+    private ConcurrentLongKeyHashMap<CompletableFuture<BufferRes>> futures;
 
     /*
      * A pointer to the store that the buffer is associated with.
@@ -98,8 +89,8 @@ public class OptimizedNumLinkBuffer implements SmartBuffer {
     }
 
     @Override
-    public Future<TransactionPrepareFailedException> add(long tid, LongKeyMap<Integer> reads) {
-        CompletableFuture<TransactionPrepareFailedException> future = new CompletableFuture<>();
+    public Future<BufferRes> add(long tid, LongKeyMap<Integer> reads) {
+        CompletableFuture<BufferRes> future = new CompletableFuture<>();
         synchronized (getTxnLock(tid)) {
             numLink.put(tid, 0);
             futures.put(tid, future);
@@ -146,7 +137,7 @@ public class OptimizedNumLinkBuffer implements SmartBuffer {
                 numLink.remove(tid);
                 futures.remove(tid);
             }
-            future.complete(new TransactionPrepareFailedException(versionConflicts));
+            future.complete(new BufferRes(versionConflicts));
             return future;
         }
 
@@ -155,7 +146,7 @@ public class OptimizedNumLinkBuffer implements SmartBuffer {
                 if (numLink.get(tid) == 0) {
                     numLink.remove(tid);
                     futures.remove(tid);
-                    future.complete(new TransactionPrepareFailedException(true));
+                    future.complete(new BufferRes());
                 }
             }
         }
@@ -177,7 +168,7 @@ public class OptimizedNumLinkBuffer implements SmartBuffer {
                             numLink.put(tid, numLink.get(tid) - 1);
                             if (numLink.get(tid) == 0) {
                                 numLink.remove(tid);
-                                futures.get(tid).complete(new TransactionPrepareFailedException(true));
+                                futures.get(tid).complete(new BufferRes());
                                 futures.remove(tid);
                             }
                         }
@@ -200,10 +191,9 @@ public class OptimizedNumLinkBuffer implements SmartBuffer {
                         if (numLink.containsKey(tid)){
                             OidKeyHashMap<SerializedObject> versionConflicts = new OidKeyHashMap<>();
                             versionConflicts.put(Worker.getWorker().getStore(database.getName()), onum, database.read(onum));
-                            TransactionPrepareFailedException e = new TransactionPrepareFailedException(versionConflicts);
 
-                            CompletableFuture<TransactionPrepareFailedException> future = futures.get(tid);
-                            future.complete(e);
+                            CompletableFuture<BufferRes> future = futures.get(tid);
+                            future.complete(new BufferRes(versionConflicts));
 
                             numLink.remove(tid);
                             futures.remove(tid);

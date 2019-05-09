@@ -5,6 +5,7 @@ import static fabric.common.ONumConstants.STORE_PRINCIPAL;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.nio.Buffer;
 import java.security.GeneralSecurityException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -51,6 +52,7 @@ import fabric.messages.ReadMessage;
 import fabric.messages.StalenessCheckMessage;
 import fabric.messages.UnsubscribeMessage;
 import fabric.store.db.ObjectDB;
+import fabric.store.smartbuffer.BufferRes;
 import fabric.worker.TransactionCommitFailedException;
 import fabric.worker.TransactionPrepareFailedException;
 import fabric.worker.Worker;
@@ -248,8 +250,8 @@ class Store extends MessageToStoreHandler {
         client.node.notifyStorePrepareFailed(msg.tid, e);
       } else {
         try {
-          TransactionPrepareFailedException fail = e.future.get();
-          if (fail.dummyexp) {
+          BufferRes fail = e.future.get();
+          if (fail.result) {
             // Run the prepare process again
             try {
               prepareTransaction(client.principal, msg.tid, msg.serializedCreates,
@@ -267,7 +269,7 @@ class Store extends MessageToStoreHandler {
             }
 
           } else {
-            client.node.notifyStorePrepareFailed(msg.tid, fail);
+            client.node.notifyStorePrepareFailed(msg.tid, new TransactionPrepareFailedException(fail.versionConflicts));
           }
         } catch (InterruptedException e1) {
           e1.printStackTrace();

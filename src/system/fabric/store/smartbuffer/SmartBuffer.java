@@ -33,7 +33,7 @@ public interface SmartBuffer {
      * @return A {@code Future} that resolves in accord with the transaction
      *             dependency status.
      */
-    Future<TransactionPrepareFailedException> add(long tid, LongKeyMap<Integer> reads);
+    Future<BufferRes> add(long tid, LongKeyMap<Integer> reads);
 
     /**
      * Remove a dependency from the dependencies of any transactions that rely

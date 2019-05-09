@@ -20,6 +20,7 @@ import fabric.common.util.LongKeyMap;
 import fabric.common.util.OidKeyHashMap;
 import fabric.lang.security.Principal;
 import fabric.store.db.ObjectDB;
+import fabric.store.smartbuffer.BufferRes;
 import fabric.worker.RemoteStore;
 import fabric.worker.TransactionPrepareFailedException;
 import fabric.worker.Worker;
@@ -345,7 +346,7 @@ public final class PrepareRequest {
       } else if (!unseenObjects.isEmpty()) {
         TransactionPrepareFailedException fail =
             new TransactionPrepareFailedException(unseenObjects);
-        Future<TransactionPrepareFailedException> future = database.buffer.add(tid, this.reads);
+        Future<BufferRes> future = database.buffer.add(tid, this.reads);
         fail.setFuture(future);
         throw fail;
       }
