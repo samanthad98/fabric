@@ -171,7 +171,6 @@ public class OptimizedNumLinkBuffer implements SmartBuffer {
                 }
             }
             unresolveddepsMap.remove(object);
-            depsMap.remove(object);
         }
     }
 
@@ -206,7 +205,7 @@ public class OptimizedNumLinkBuffer implements SmartBuffer {
             numLink.remove(tid);
             CompletableFuture<BufferRes> future = futures.get(tid);
             futures.remove(tid);
-            future.complete(new BufferRes(new OidKeyHashMap<>()));
+            future.complete(new BufferRes(new OidKeyHashMap<SerializedObject>()));
         }
     }
 
@@ -226,7 +225,7 @@ public class OptimizedNumLinkBuffer implements SmartBuffer {
     public void addtoSetMap(ConcurrentHashMap<LongKeyMap.Entry<Integer>,
             HashSet<Long>> map, LongKeyMap.Entry<Integer> object, long tid) {
         if (!map.containsKey(object)) {
-            map.put(object, new HashSet<>());
+            map.put(object, new HashSet<Long>());
         }
         map.get(object).add(tid);
     }

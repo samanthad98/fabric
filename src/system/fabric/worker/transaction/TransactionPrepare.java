@@ -283,13 +283,13 @@ public class TransactionPrepare {
         // a response before continuing.
         // (What's remaining appears to be proper handling of creates, which
         // aren't visible until the creating transaction is committed).
-        while (currentStatus == Status.COMMITTING) {
-          try {
-            wait();
-          } catch (InterruptedException e) {
-            Logging.logIgnoredInterruptedException(e);
-          }
-        }
+//        while (currentStatus == Status.COMMITTING) {
+//          try {
+//            wait();
+//          } catch (InterruptedException e) {
+//            Logging.logIgnoredInterruptedException(e);
+//          }
+//        }
       } else {
         // Mark this as committed.
         currentStatus = Status.COMMITTED;
