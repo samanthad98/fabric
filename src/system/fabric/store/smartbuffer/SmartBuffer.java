@@ -1,50 +1,34 @@
 package fabric.store.smartbuffer;
 
-import fabric.common.net.RemoteIdentity;
 import fabric.common.util.LongKeyMap;
-import fabric.common.util.OidKeyHashMap;
 import fabric.common.SerializedObject;
-import fabric.store.PrepareRequest;
-import fabric.store.PrepareRequest.ItemPrepare;
-import fabric.store.db.ObjectDB;
-import fabric.worker.TransactionPrepareFailedException;
-import fabric.worker.remote.RemoteWorker;
 
-import java.util.Set;
 import java.util.concurrent.Future;
 
 public interface SmartBuffer {
     /**
      * Add a transaction with a set of dependencies to the buffer. This method
      * will return a {@code Future} that resolves with {@code true} if the
-     * transaction prepares successfully, and {@code false} if there is
-     * something that prevents the transaction from being prepared such as a
-     * version conflict. A transaction is viewed as resolved if all of its
-     * dependencies are resolved.
-     *
-     * Preconditions:
-     *  - the store must be set via {@link SmartBuffer#setDatabase(ObjectDB)} before
-     *    calling this method.
-     *  - the transaction ID must exist as a pending transaction in the store
-     *
+     * transaction prepares successfully, and {@code false} with {@code versionconflict}
+     * if there is something that prevents the transaction from being prepared
+     * such as a version conflict. A transaction is viewed as resolved if all
+     * of its dependencies are resolved.
      *
      * @param tid The ID of the transaction.
-     * @param reads The PrepareRequest
+     * @param reads The set of objects that the txn reads.
      * @return A {@code Future} that resolves in accord with the transaction
      *             dependency status.
      */
     Future<BufferRes> add(long tid, LongKeyMap<Integer> reads);
 
     /**
-     * Remove a dependency from the dependencies of any transactions that rely
-     * on it. Any transactions that have no unresolved dependencies after this
-     * will have their corresponding futures resolved with {@code true} if any
-     * required locks can be successfully grabbed, and {@code false} otherwise.
+     * Remove a committed object from the dependencies of any transactions that
+     * rely on it. Any transactions that have no unresolved dependencies after
+     * this will have their corresponding futures resolved with {@code true}. Any
+     * transactions that depend on an older version of the object will have their
+     * corresponding futures resolved with {@code false}.
      *
-     * Note that the store must be set via {@link SmartBuffer#setStore(Store)}
-     * before calling this method.
-     *
-     * @param object The dependency.
+     * @param object The object being committed.
      */
     void remove(SerializedObject object);
 
@@ -52,9 +36,6 @@ public interface SmartBuffer {
      * Remove a transaction from the buffer. Note that this will make the
      * future that was returned from adding the transaction resolve with
      * {@code false}.
-     *
-     * Note that the store must be set via {@link SmartBuffer#setStore(Store)}
-     * before calling this method.
      *
      * @param tid The ID of the transaction.
      */

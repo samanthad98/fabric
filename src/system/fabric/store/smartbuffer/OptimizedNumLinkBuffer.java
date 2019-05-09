@@ -2,18 +2,13 @@ package fabric.store.smartbuffer;
 
 import fabric.common.SerializedObject;
 import fabric.common.exceptions.AccessException;
-import fabric.common.net.RemoteIdentity;
 import fabric.common.util.ConcurrentLongKeyHashMap;
 import fabric.common.util.LongKeyMap;
 import fabric.common.util.LongKeyHashMap;
 import fabric.common.util.OidKeyHashMap;
-import fabric.store.PrepareRequest;
 import fabric.store.db.ObjectDB;
-import fabric.worker.TransactionPrepareFailedException;
 import fabric.worker.Worker;
-import fabric.worker.remote.RemoteWorker;
 
-import java.nio.Buffer;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -209,7 +204,9 @@ public class OptimizedNumLinkBuffer implements SmartBuffer {
     public void delete(long tid) {
         synchronized (getTxnLock(tid)) {
             numLink.remove(tid);
+            CompletableFuture<BufferRes> future = futures.get(tid);
             futures.remove(tid);
+            future.complete(new BufferRes(new OidKeyHashMap<>()));
         }
     }
 
